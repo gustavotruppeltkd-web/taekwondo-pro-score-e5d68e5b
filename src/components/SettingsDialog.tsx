@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScoreboardSettings } from "@/hooks/useScoreboard";
-import { Upload, Volume2 } from "lucide-react";
+import { Upload, Volume2, User } from "lucide-react";
 
 interface SettingsDialogProps {
   open: boolean;
@@ -28,6 +28,12 @@ export const SettingsDialog = ({
     tenSecondWarning: null as File | null,
   });
 
+  useEffect(() => {
+    if (open) {
+      setLocalSettings(settings);
+    }
+  }, [open, settings]);
+
   const handleSave = () => {
     onSave(localSettings);
     onOpenChange(false);
@@ -35,17 +41,56 @@ export const SettingsDialog = ({
 
   const handleAudioUpload = (type: keyof typeof audioFiles, file: File | null) => {
     setAudioFiles(prev => ({ ...prev, [type]: file }));
-    // In a real implementation, you'd store these and use them for playback
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-card border-border max-w-md">
+      <DialogContent className="bg-card border-border max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-foreground text-xl">Configurações</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
+          {/* Athlete Names */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <User className="w-4 h-4" />
+              Atletas
+            </h3>
+            
+            <div className="grid grid-cols-1 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="chungName" className="text-chung">Nome Chung (Azul)</Label>
+                <Input
+                  id="chungName"
+                  type="text"
+                  value={localSettings.chungName}
+                  onChange={(e) => setLocalSettings(prev => ({ 
+                    ...prev, 
+                    chungName: e.target.value || 'Atleta Azul' 
+                  }))}
+                  className="bg-input border-border"
+                  placeholder="Atleta Azul"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="hongName" className="text-hong">Nome Hong (Vermelho)</Label>
+                <Input
+                  id="hongName"
+                  type="text"
+                  value={localSettings.hongName}
+                  onChange={(e) => setLocalSettings(prev => ({ 
+                    ...prev, 
+                    hongName: e.target.value || 'Atleta Vermelho' 
+                  }))}
+                  className="bg-input border-border"
+                  placeholder="Atleta Vermelho"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Timer Settings */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
