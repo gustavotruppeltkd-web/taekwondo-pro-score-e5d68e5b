@@ -38,26 +38,34 @@ export const Scoreboard = () => {
 
   const { connected: gamepadConnected, gamepadName } = useGamepad(gamepadMapping, gamepadActions);
 
+  const roundsToWin = Math.ceil(settings.totalRounds / 2);
+
   return (
     <div className="h-screen w-screen flex overflow-hidden bg-background">
       {/* Chung (Blue) Side */}
       <FighterPanel
         side="chung"
-        name="Atleta Azul"
-        score={state.chungScore}
-        gamjeom={state.chungGamjeom}
+        name={settings.chungName}
+        score={state.chung.score}
+        gamjeom={state.chung.gamjeom}
+        roundsWon={state.chung.roundsWon}
+        roundsToWin={roundsToWin}
         onAddPoints={(points) => addPoints('chung', points)}
         onAddGamjeom={() => addGamjeom('chung')}
+        disabled={state.matchEnded || state.isResting}
       />
 
       {/* Hong (Red) Side */}
       <FighterPanel
         side="hong"
-        name="Atleta Vermelho"
-        score={state.hongScore}
-        gamjeom={state.hongGamjeom}
+        name={settings.hongName}
+        score={state.hong.score}
+        gamjeom={state.hong.gamjeom}
+        roundsWon={state.hong.roundsWon}
+        roundsToWin={roundsToWin}
         onAddPoints={(points) => addPoints('hong', points)}
         onAddGamjeom={() => addGamjeom('hong')}
+        disabled={state.matchEnded || state.isResting}
       />
 
       {/* Center Timer Panel */}
@@ -68,7 +76,7 @@ export const Scoreboard = () => {
         isRunning={state.isRunning}
         isResting={state.isResting}
         matchEnded={state.matchEnded}
-        winner={state.winner}
+        matchWinner={state.matchWinner}
         gamepadConnected={gamepadConnected}
         onToggleTimer={toggleTimer}
         onResetRound={resetRound}

@@ -8,7 +8,7 @@ interface TimerPanelProps {
   isRunning: boolean;
   isResting: boolean;
   matchEnded: boolean;
-  winner: 'chung' | 'hong' | null;
+  matchWinner: 'chung' | 'hong' | null;
   gamepadConnected: boolean;
   onToggleTimer: () => void;
   onResetRound: () => void;
@@ -29,7 +29,7 @@ export const TimerPanel = ({
   isRunning,
   isResting,
   matchEnded,
-  winner,
+  matchWinner,
   gamepadConnected,
   onToggleTimer,
   onResetRound,
@@ -40,34 +40,34 @@ export const TimerPanel = ({
   const isDanger = timeRemaining <= 10;
 
   return (
-    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center">
+    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center mt-8 md:mt-12">
       {/* Match Ended Overlay */}
       {matchEnded && (
-        <div className="absolute inset-0 flex items-center justify-center">
+        <div className="absolute -top-16 md:-top-20 left-1/2 -translate-x-1/2">
           <div className={cn(
-            "text-3xl md:text-5xl font-bold uppercase px-6 py-3 rounded-lg",
-            winner === 'chung' ? "bg-chung text-white" : 
-            winner === 'hong' ? "bg-hong text-white" : 
+            "text-2xl md:text-4xl font-bold uppercase px-6 py-3 rounded-lg whitespace-nowrap",
+            matchWinner === 'chung' ? "bg-chung text-white" : 
+            matchWinner === 'hong' ? "bg-hong text-white" : 
             "bg-muted text-foreground"
           )}>
-            {winner ? `${winner === 'chung' ? 'CHUNG' : 'HONG'} WINS!` : 'DRAW'}
+            {matchWinner ? `VENCEDOR: ${matchWinner === 'chung' ? 'CHUNG' : 'HONG'}` : 'EMPATE'}
           </div>
         </div>
       )}
 
       {/* Timer Container */}
       <div className={cn(
-        "bg-background/95 rounded-2xl p-4 md:p-8 scoreboard-shadow",
+        "bg-background/95 rounded-2xl p-3 md:p-6 scoreboard-shadow",
         "border-4 border-muted flex flex-col items-center",
-        matchEnded && "opacity-30"
+        matchEnded && "opacity-50"
       )}>
         {/* Round Indicator */}
-        <div className="flex items-center gap-2 mb-2 md:mb-4">
+        <div className="flex items-center gap-2 mb-2 md:mb-3">
           {Array.from({ length: totalRounds }, (_, i) => (
             <div
               key={i}
               className={cn(
-                "w-6 h-6 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-sm md:text-lg",
+                "w-5 h-5 md:w-8 md:h-8 rounded-full flex items-center justify-center font-bold text-xs md:text-sm",
                 i + 1 === currentRound
                   ? isResting 
                     ? "bg-primary text-primary-foreground animate-pulse-glow" 
@@ -84,15 +84,15 @@ export const TimerPanel = ({
 
         {/* Rest Indicator */}
         {isResting && (
-          <div className="text-primary font-bold text-lg md:text-2xl uppercase tracking-wider mb-2 animate-pulse">
-            REST
+          <div className="text-primary font-bold text-base md:text-xl uppercase tracking-wider mb-1 animate-pulse">
+            DESCANSO
           </div>
         )}
 
         {/* Main Timer */}
         <div
           className={cn(
-            "font-digital text-5xl md:text-8xl lg:text-9xl font-bold leading-none",
+            "font-digital text-4xl md:text-6xl lg:text-7xl font-bold leading-none",
             isDanger ? "text-timer-danger text-glow-danger" :
             isWarning ? "text-timer-warning text-glow-warning" :
             "text-timer text-glow-timer"
@@ -102,53 +102,53 @@ export const TimerPanel = ({
         </div>
 
         {/* Control Buttons */}
-        <div className="flex items-center gap-3 md:gap-4 mt-4 md:mt-6">
+        <div className="flex items-center gap-2 md:gap-3 mt-3 md:mt-4">
           <button
             onClick={onToggleTimer}
             disabled={matchEnded}
             className={cn(
-              "p-3 md:p-4 rounded-full",
+              "p-2 md:p-3 rounded-full",
               "bg-primary hover:bg-primary/80 text-primary-foreground",
               "transition-all duration-200 active:scale-95",
               "disabled:opacity-50 disabled:cursor-not-allowed"
             )}
           >
-            {isRunning ? <Pause className="w-5 h-5 md:w-7 md:h-7" /> : <Play className="w-5 h-5 md:w-7 md:h-7" />}
+            {isRunning ? <Pause className="w-4 h-4 md:w-5 md:h-5" /> : <Play className="w-4 h-4 md:w-5 md:h-5" />}
           </button>
           
           <button
             onClick={onResetRound}
             className={cn(
-              "p-3 md:p-4 rounded-full",
+              "p-2 md:p-3 rounded-full",
               "bg-muted hover:bg-muted-foreground/20 text-foreground",
               "transition-all duration-200 active:scale-95"
             )}
           >
-            <RotateCcw className="w-5 h-5 md:w-7 md:h-7" />
+            <RotateCcw className="w-4 h-4 md:w-5 md:h-5" />
           </button>
 
           <button
             onClick={onOpenSettings}
             className={cn(
-              "p-3 md:p-4 rounded-full",
+              "p-2 md:p-3 rounded-full",
               "bg-muted hover:bg-muted-foreground/20 text-foreground",
               "transition-all duration-200 active:scale-95"
             )}
           >
-            <Settings className="w-5 h-5 md:w-7 md:h-7" />
+            <Settings className="w-4 h-4 md:w-5 md:h-5" />
           </button>
 
           <button
             onClick={onOpenGamepad}
             className={cn(
-              "p-3 md:p-4 rounded-full relative",
+              "p-2 md:p-3 rounded-full relative",
               "bg-muted hover:bg-muted-foreground/20 text-foreground",
               "transition-all duration-200 active:scale-95"
             )}
           >
-            <Gamepad2 className="w-5 h-5 md:w-7 md:h-7" />
+            <Gamepad2 className="w-4 h-4 md:w-5 md:h-5" />
             {gamepadConnected && (
-              <span className="absolute top-1 right-1 w-2 h-2 md:w-3 md:h-3 bg-timer rounded-full" />
+              <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-timer rounded-full" />
             )}
           </button>
         </div>
