@@ -1,0 +1,194 @@
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { ScoreboardSettings } from "@/hooks/useScoreboard";
+import { Upload, Volume2 } from "lucide-react";
+
+interface SettingsDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  settings: ScoreboardSettings;
+  onSave: (settings: Partial<ScoreboardSettings>) => void;
+  onResetMatch: () => void;
+}
+
+export const SettingsDialog = ({
+  open,
+  onOpenChange,
+  settings,
+  onSave,
+  onResetMatch,
+}: SettingsDialogProps) => {
+  const [localSettings, setLocalSettings] = useState(settings);
+  const [audioFiles, setAudioFiles] = useState({
+    roundStart: null as File | null,
+    roundEnd: null as File | null,
+    tenSecondWarning: null as File | null,
+  });
+
+  const handleSave = () => {
+    onSave(localSettings);
+    onOpenChange(false);
+  };
+
+  const handleAudioUpload = (type: keyof typeof audioFiles, file: File | null) => {
+    setAudioFiles(prev => ({ ...prev, [type]: file }));
+    // In a real implementation, you'd store these and use them for playback
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-card border-border max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-foreground text-xl">Configurações</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-6 py-4">
+          {/* Timer Settings */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+              Tempo
+            </h3>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="roundTime">Tempo de Round (seg)</Label>
+                <Input
+                  id="roundTime"
+                  type="number"
+                  value={localSettings.roundTime}
+                  onChange={(e) => setLocalSettings(prev => ({ 
+                    ...prev, 
+                    roundTime: parseInt(e.target.value) || 120 
+                  }))}
+                  className="bg-input border-border"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="restTime">Tempo de Descanso (seg)</Label>
+                <Input
+                  id="restTime"
+                  type="number"
+                  value={localSettings.restTime}
+                  onChange={(e) => setLocalSettings(prev => ({ 
+                    ...prev, 
+                    restTime: parseInt(e.target.value) || 60 
+                  }))}
+                  className="bg-input border-border"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Victory Conditions */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+              Condições de Vitória
+            </h3>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="maxScore">Gap de Pontos</Label>
+                <Input
+                  id="maxScore"
+                  type="number"
+                  value={localSettings.maxScore}
+                  onChange={(e) => setLocalSettings(prev => ({ 
+                    ...prev, 
+                    maxScore: parseInt(e.target.value) || 20 
+                  }))}
+                  className="bg-input border-border"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="maxGamjeom">Limite de Faltas</Label>
+                <Input
+                  id="maxGamjeom"
+                  type="number"
+                  value={localSettings.maxGamjeom}
+                  onChange={(e) => setLocalSettings(prev => ({ 
+                    ...prev, 
+                    maxGamjeom: parseInt(e.target.value) || 10 
+                  }))}
+                  className="bg-input border-border"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="totalRounds">Número de Rounds</Label>
+              <Input
+                id="totalRounds"
+                type="number"
+                min="1"
+                max="5"
+                value={localSettings.totalRounds}
+                onChange={(e) => setLocalSettings(prev => ({ 
+                  ...prev, 
+                  totalRounds: Math.min(5, Math.max(1, parseInt(e.target.value) || 3))
+                }))}
+                className="bg-input border-border"
+              />
+            </div>
+          </div>
+
+          {/* Audio Settings */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <Volume2 className="w-4 h-4" />
+              Áudio
+            </h3>
+            
+            <div className="space-y-3">
+              {[
+                { key: 'roundStart', label: 'Início de Round' },
+                { key: 'roundEnd', label: 'Fim de Round' },
+                { key: 'tenSecondWarning', label: 'Alerta 10 Segundos' },
+              ].map(({ key, label }) => (
+                <div key={key} className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">{label}</span>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="file"
+                      accept="audio/*"
+                      className="hidden"
+                      onChange={(e) => handleAudioUpload(
+                        key as keyof typeof audioFiles, 
+                        e.target.files?.[0] || null
+                      )}
+                    />
+                    <span className={`text-xs ${audioFiles[key as keyof typeof audioFiles] ? 'text-timer' : 'text-muted-foreground'}`}>
+                      {audioFiles[key as keyof typeof audioFiles]?.name || 'Beep padrão'}
+                    </span>
+                    <Upload className="w-4 h-4 text-muted-foreground" />
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                onResetMatch();
+                onOpenChange(false);
+              }}
+              className="flex-1"
+            >
+              Reiniciar Luta
+            </Button>
+            <Button onClick={handleSave} className="flex-1">
+              Salvar
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
