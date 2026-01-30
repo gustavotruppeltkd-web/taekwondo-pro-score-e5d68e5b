@@ -27,6 +27,9 @@ export interface ScoreboardState {
   matchEnded: boolean;
   roundWinner: 'chung' | 'hong' | null;
   matchWinner: 'chung' | 'hong' | null;
+  showRoundWinner: boolean;
+  showDecisionModal: boolean;
+  roundResults: Array<'chung' | 'hong' | null>;
 }
 
 const defaultSettings: ScoreboardSettings = {
@@ -61,42 +64,123 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
     matchEnded: false,
     roundWinner: null,
     matchWinner: null,
+    showRoundWinner: false,
+    showDecisionModal: false,
+    roundResults: [],
   });
 
   const timerRef = useRef<number | null>(null);
   const tenSecondAlertRef = useRef(false);
 
-  // Determine round winner
-  const determineRoundWinner = useCallback((chung: FighterScore, hong: FighterScore): 'chung' | 'hong' | null => {
-    if (chung.score > hong.score) return 'chung';
-    if (hong.score > chung.score) return 'hong';
-    return null; // Draw
+  // Handle referee decision for tie
+  const handleRefereeDecision = useCallback((winner: 'chung' | 'hong') => {
+    setState(prev => {
+      const newChung = { ...prev.chung };
+      const newHong = { ...prev.hong };
+      const newResults = [...prev.roundResults];
+      
+      if (winner === 'chung') {
+        newChung.roundsWon += 1;
+      } else {
+        newHong.roundsWon += 1;
+      }
+      
+      newResults[prev.currentRound - 1] = winner;
+      
+      const roundsToWin = Math.ceil(settings.totalRounds / 2);
+      
+      // Check for match winner
+      if (newChung.roundsWon >= roundsToWin) {
+        return {
+          ...prev,
+          chung: newChung,
+          hong: newHong,
+          roundResults: newResults,
+          showDecisionModal: false,
+          showRoundWinner: true,
+          roundWinner: winner,
+          matchEnded: true,
+          matchWinner: 'chung',
+        };
+      }
+      if (newHong.roundsWon >= roundsToWin) {
+        return {
+          ...prev,
+          chung: newChung,
+          hong: newHong,
+          roundResults: newResults,
+          showDecisionModal: false,
+          showRoundWinner: true,
+          roundWinner: winner,
+          matchEnded: true,
+          matchWinner: 'hong',
+        };
+      }
+      
+      // More rounds to go
+      return {
+        ...prev,
+        chung: newChung,
+        hong: newHong,
+        roundResults: newResults,
+        showDecisionModal: false,
+        showRoundWinner: true,
+        roundWinner: winner,
+        isResting: true,
+        isRunning: true,
+        timeRemaining: settings.restTime,
+      };
+    });
+  }, [settings.totalRounds, settings.restTime]);
+
+  // Dismiss round winner banner and proceed
+  const dismissRoundWinner = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      showRoundWinner: false,
+    }));
   }, []);
 
   // End current round and update state
   const endRound = useCallback((currentState: ScoreboardState): ScoreboardState => {
-    const roundWinner = determineRoundWinner(currentState.chung, currentState.hong);
+    const { chung, hong, currentRound } = currentState;
     
-    const newChung = { ...currentState.chung };
-    const newHong = { ...currentState.hong };
+    // Check for tie
+    if (chung.score === hong.score) {
+      return {
+        ...currentState,
+        isRunning: false,
+        showDecisionModal: true,
+      };
+    }
+    
+    const roundWinner = chung.score > hong.score ? 'chung' : 'hong';
+    const newChung = { ...chung };
+    const newHong = { ...hong };
+    const newResults = [...currentState.roundResults];
     
     if (roundWinner === 'chung') {
       newChung.roundsWon += 1;
-    } else if (roundWinner === 'hong') {
+    } else {
       newHong.roundsWon += 1;
     }
     
-    // Check for match winner (best of 3 = need 2 rounds)
+    newResults[currentRound - 1] = roundWinner;
+    
     const roundsToWin = Math.ceil(settings.totalRounds / 2);
+    
+    // Check for match winner
     if (newChung.roundsWon >= roundsToWin) {
       return {
         ...currentState,
         chung: newChung,
         hong: newHong,
+        roundResults: newResults,
         isRunning: false,
         matchEnded: true,
         roundWinner,
         matchWinner: 'chung',
+        showRoundWinner: true,
       };
     }
     if (newHong.roundsWon >= roundsToWin) {
@@ -104,28 +188,32 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
         ...currentState,
         chung: newChung,
         hong: newHong,
+        roundResults: newResults,
         isRunning: false,
         matchEnded: true,
         roundWinner,
         matchWinner: 'hong',
+        showRoundWinner: true,
       };
     }
     
-    // No match winner yet, prepare for rest/next round
+    // More rounds to go
     return {
       ...currentState,
       chung: newChung,
       hong: newHong,
+      roundResults: newResults,
       isRunning: true,
       isResting: true,
       timeRemaining: settings.restTime,
       roundWinner,
+      showRoundWinner: true,
     };
-  }, [determineRoundWinner, settings.totalRounds, settings.restTime]);
+  }, [settings.totalRounds, settings.restTime]);
 
-  // Check for immediate victory conditions (point gap or gamjeom limit)
+  // Check for immediate victory conditions
   const checkImmediateVictory = useCallback((newState: ScoreboardState): ScoreboardState => {
-    const { chung, hong } = newState;
+    const { chung, hong, currentRound } = newState;
     const scoreDiff = Math.abs(chung.score - hong.score);
     
     // Point gap victory
@@ -136,48 +224,64 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
       });
     }
 
-    // Gamjeom limit
+    // Gamjeom limit - opponent wins the round
     if (chung.gamjeom >= settings.maxGamjeom) {
-      const updated = { ...newState };
-      updated.hong = { ...updated.hong, roundsWon: updated.hong.roundsWon + 1 };
+      const newHong = { ...hong, roundsWon: hong.roundsWon + 1 };
+      const newResults = [...newState.roundResults];
+      newResults[currentRound - 1] = 'hong';
+      
       const roundsToWin = Math.ceil(settings.totalRounds / 2);
-      if (updated.hong.roundsWon >= roundsToWin) {
+      if (newHong.roundsWon >= roundsToWin) {
         return {
-          ...updated,
+          ...newState,
+          hong: newHong,
+          roundResults: newResults,
           isRunning: false,
           matchEnded: true,
           roundWinner: 'hong',
           matchWinner: 'hong',
+          showRoundWinner: true,
         };
       }
       return {
-        ...updated,
+        ...newState,
+        hong: newHong,
+        roundResults: newResults,
         isRunning: true,
         isResting: true,
         timeRemaining: settings.restTime,
         roundWinner: 'hong',
+        showRoundWinner: true,
       };
     }
 
     if (hong.gamjeom >= settings.maxGamjeom) {
-      const updated = { ...newState };
-      updated.chung = { ...updated.chung, roundsWon: updated.chung.roundsWon + 1 };
+      const newChung = { ...chung, roundsWon: chung.roundsWon + 1 };
+      const newResults = [...newState.roundResults];
+      newResults[currentRound - 1] = 'chung';
+      
       const roundsToWin = Math.ceil(settings.totalRounds / 2);
-      if (updated.chung.roundsWon >= roundsToWin) {
+      if (newChung.roundsWon >= roundsToWin) {
         return {
-          ...updated,
+          ...newState,
+          chung: newChung,
+          roundResults: newResults,
           isRunning: false,
           matchEnded: true,
           roundWinner: 'chung',
           matchWinner: 'chung',
+          showRoundWinner: true,
         };
       }
       return {
-        ...updated,
+        ...newState,
+        chung: newChung,
+        roundResults: newResults,
         isRunning: true,
         isResting: true,
         timeRemaining: settings.restTime,
         roundWinner: 'chung',
+        showRoundWinner: true,
       };
     }
 
@@ -232,6 +336,8 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
       isRunning: false,
       isResting: false,
       roundWinner: null,
+      showRoundWinner: false,
+      showDecisionModal: false,
     }));
   }, [settings.roundTime]);
 
@@ -247,6 +353,9 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
       matchEnded: false,
       roundWinner: null,
       matchWinner: null,
+      showRoundWinner: false,
+      showDecisionModal: false,
+      roundResults: [],
     });
   }, [settings.roundTime]);
 
@@ -261,6 +370,7 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
       isResting: false,
       isRunning: false,
       roundWinner: null,
+      showRoundWinner: false,
     }));
   }, [settings.roundTime]);
 
@@ -284,6 +394,7 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
                 isResting: false,
                 isRunning: false,
                 roundWinner: null,
+                showRoundWinner: false,
               };
             } else {
               // Round ended by time
@@ -324,5 +435,7 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
     resetMatch,
     nextRound,
     updateSettings,
+    handleRefereeDecision,
+    dismissRoundWinner,
   };
 };

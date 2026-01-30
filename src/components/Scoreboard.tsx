@@ -3,6 +3,9 @@ import { FighterPanel } from "./FighterPanel";
 import { TimerPanel } from "./TimerPanel";
 import { SettingsDialog } from "./SettingsDialog";
 import { GamepadDialog } from "./GamepadDialog";
+import { RefereeDecisionModal } from "./RefereeDecisionModal";
+import { RoundWinnerBanner } from "./RoundWinnerBanner";
+import { AudioUnlockButton } from "./AudioUnlockButton";
 import { useScoreboard } from "@/hooks/useScoreboard";
 import { useGamepad, GamepadMapping, defaultMapping } from "@/hooks/useGamepad";
 
@@ -20,6 +23,8 @@ export const Scoreboard = () => {
     resetRound,
     resetMatch,
     updateSettings,
+    handleRefereeDecision,
+    dismissRoundWinner,
   } = useScoreboard();
 
   // Gamepad actions
@@ -34,14 +39,33 @@ export const Scoreboard = () => {
     onHongGamjeom: useCallback(() => addGamjeom('hong'), [addGamjeom]),
     onStartPause: toggleTimer,
     onResetRound: resetRound,
+    onDecisionChung: useCallback(() => {
+      if (state.showDecisionModal) {
+        handleRefereeDecision('chung');
+      }
+    }, [state.showDecisionModal, handleRefereeDecision]),
+    onDecisionHong: useCallback(() => {
+      if (state.showDecisionModal) {
+        handleRefereeDecision('hong');
+      }
+    }, [state.showDecisionModal, handleRefereeDecision]),
   };
 
   const { connected: gamepadConnected, gamepadName } = useGamepad(gamepadMapping, gamepadActions);
 
   const roundsToWin = Math.ceil(settings.totalRounds / 2);
 
+  const getWinnerName = () => {
+    if (state.roundWinner === 'chung') return settings.chungName;
+    if (state.roundWinner === 'hong') return settings.hongName;
+    return '';
+  };
+
   return (
     <div className="h-screen w-screen flex overflow-hidden bg-background">
+      {/* Audio Unlock Button for iOS */}
+      <AudioUnlockButton />
+
       {/* Chung (Blue) Side */}
       <FighterPanel
         side="chung"
@@ -78,10 +102,28 @@ export const Scoreboard = () => {
         matchEnded={state.matchEnded}
         matchWinner={state.matchWinner}
         gamepadConnected={gamepadConnected}
+        roundResults={state.roundResults}
+        winnerName={state.matchWinner === 'chung' ? settings.chungName : settings.hongName}
         onToggleTimer={toggleTimer}
         onResetRound={resetRound}
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenGamepad={() => setGamepadOpen(true)}
+      />
+
+      {/* Round Winner Banner */}
+      <RoundWinnerBanner
+        winner={state.showRoundWinner ? state.roundWinner : null}
+        winnerName={getWinnerName()}
+        round={state.currentRound}
+        onDismiss={dismissRoundWinner}
+      />
+
+      {/* Referee Decision Modal */}
+      <RefereeDecisionModal
+        open={state.showDecisionModal}
+        chungName={settings.chungName}
+        hongName={settings.hongName}
+        onDecision={handleRefereeDecision}
       />
 
       {/* Settings Dialog */}
