@@ -1,5 +1,7 @@
 import { cn } from "@/lib/utils";
 import { Play, Pause, RotateCcw, Settings, Gamepad2 } from "lucide-react";
+import { motion } from "framer-motion";
+import { RoundIndicator } from "./RoundIndicator";
 
 interface TimerPanelProps {
   timeRemaining: number;
@@ -10,6 +12,8 @@ interface TimerPanelProps {
   matchEnded: boolean;
   matchWinner: 'chung' | 'hong' | null;
   gamepadConnected: boolean;
+  roundResults: Array<'chung' | 'hong' | null>;
+  winnerName?: string;
   onToggleTimer: () => void;
   onResetRound: () => void;
   onOpenSettings: () => void;
@@ -31,6 +35,8 @@ export const TimerPanel = ({
   matchEnded,
   matchWinner,
   gamepadConnected,
+  roundResults,
+  winnerName,
   onToggleTimer,
   onResetRound,
   onOpenSettings,
@@ -40,47 +46,51 @@ export const TimerPanel = ({
   const isDanger = timeRemaining <= 10;
 
   return (
-    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center mt-8 md:mt-12">
+    <motion.div 
+      drag
+      dragMomentum={false}
+      dragElastic={0.1}
+      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center mt-16 md:mt-20 cursor-grab active:cursor-grabbing"
+      whileDrag={{ scale: 1.02 }}
+    >
       {/* Match Ended Overlay */}
       {matchEnded && (
-        <div className="absolute -top-16 md:-top-20 left-1/2 -translate-x-1/2">
-          <div className={cn(
-            "text-2xl md:text-4xl font-bold uppercase px-6 py-3 rounded-lg whitespace-nowrap",
-            matchWinner === 'chung' ? "bg-chung text-white" : 
-            matchWinner === 'hong' ? "bg-hong text-white" : 
-            "bg-muted text-foreground"
-          )}>
-            {matchWinner ? `VENCEDOR: ${matchWinner === 'chung' ? 'CHUNG' : 'HONG'}` : 'EMPATE'}
-          </div>
+        <div className="absolute -top-20 md:-top-24 left-1/2 -translate-x-1/2">
+          <motion.div 
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className={cn(
+              "text-xl md:text-3xl font-bold uppercase px-6 py-4 rounded-xl whitespace-nowrap",
+              "border-4 scoreboard-shadow",
+              matchWinner === 'chung' ? "bg-chung border-chung-dark text-white" : 
+              matchWinner === 'hong' ? "bg-hong border-hong-dark text-white" : 
+              "bg-muted border-muted-foreground text-foreground"
+            )}
+          >
+            {matchWinner ? (
+              <div className="flex flex-col items-center">
+                <span className="text-sm md:text-lg opacity-80">VENCEDOR DA LUTA</span>
+                <span>{winnerName || (matchWinner === 'chung' ? 'CHUNG' : 'HONG')}</span>
+              </div>
+            ) : 'EMPATE'}
+          </motion.div>
         </div>
       )}
 
       {/* Timer Container */}
       <div className={cn(
-        "bg-background/95 rounded-2xl p-3 md:p-6 scoreboard-shadow",
+        "bg-background/95 rounded-2xl p-3 md:p-5 scoreboard-shadow",
         "border-4 border-muted flex flex-col items-center",
+        "select-none",
         matchEnded && "opacity-50"
       )}>
         {/* Round Indicator */}
-        <div className="flex items-center gap-2 mb-2 md:mb-3">
-          {Array.from({ length: totalRounds }, (_, i) => (
-            <div
-              key={i}
-              className={cn(
-                "w-5 h-5 md:w-8 md:h-8 rounded-full flex items-center justify-center font-bold text-xs md:text-sm",
-                i + 1 === currentRound
-                  ? isResting 
-                    ? "bg-primary text-primary-foreground animate-pulse-glow" 
-                    : "bg-primary text-primary-foreground"
-                  : i + 1 < currentRound
-                  ? "bg-muted-foreground text-background"
-                  : "bg-muted text-muted-foreground"
-              )}
-            >
-              R{i + 1}
-            </div>
-          ))}
-        </div>
+        <RoundIndicator
+          totalRounds={totalRounds}
+          currentRound={currentRound}
+          roundResults={roundResults}
+          isResting={isResting}
+        />
 
         {/* Rest Indicator */}
         {isResting && (
@@ -92,7 +102,7 @@ export const TimerPanel = ({
         {/* Main Timer */}
         <div
           className={cn(
-            "font-digital text-4xl md:text-6xl lg:text-7xl font-bold leading-none",
+            "font-digital text-3xl md:text-5xl lg:text-6xl font-bold leading-none",
             isDanger ? "text-timer-danger text-glow-danger" :
             isWarning ? "text-timer-warning text-glow-warning" :
             "text-timer text-glow-timer"
@@ -153,6 +163,6 @@ export const TimerPanel = ({
           </button>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };

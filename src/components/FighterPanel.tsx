@@ -73,10 +73,10 @@ export const FighterPanel = ({
           {score.toString().padStart(2, '0')}
         </div>
 
-        {/* Gamjeom Counter */}
-        <div className="flex items-center gap-2 mt-2 md:mt-4">
-          <span className="text-gamjeom font-bold text-lg md:text-2xl">G:</span>
-          <span className="font-digital text-gamjeom text-2xl md:text-4xl font-bold">
+        {/* Gamjeom Counter - Bigger and more spaced */}
+        <div className="flex items-center gap-3 mt-6 md:mt-10">
+          <span className="text-gamjeom font-bold text-3xl md:text-5xl">G:</span>
+          <span className="font-digital text-gamjeom text-4xl md:text-6xl font-bold">
             {gamjeom}
           </span>
         </div>

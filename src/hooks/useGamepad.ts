@@ -11,6 +11,8 @@ export interface GamepadMapping {
   hongGamjeom: number | null;
   startPause: number | null;
   resetRound: number | null;
+  decisionChung: number | null;
+  decisionHong: number | null;
 }
 
 export const defaultMapping: GamepadMapping = {
@@ -24,6 +26,8 @@ export const defaultMapping: GamepadMapping = {
   hongGamjeom: 5,     // R1
   startPause: 9,      // Options
   resetRound: 8,      // Share
+  decisionChung: 6,   // L2
+  decisionHong: 7,    // R2
 };
 
 interface GamepadActions {
@@ -37,6 +41,8 @@ interface GamepadActions {
   onHongGamjeom?: () => void;
   onStartPause?: () => void;
   onResetRound?: () => void;
+  onDecisionChung?: () => void;
+  onDecisionHong?: () => void;
 }
 
 export const useGamepad = (mapping: GamepadMapping, actions: GamepadActions) => {
@@ -57,6 +63,8 @@ export const useGamepad = (mapping: GamepadMapping, actions: GamepadActions) => 
       hongGamjeom: actions.onHongGamjeom,
       startPause: actions.onStartPause,
       resetRound: actions.onResetRound,
+      decisionChung: actions.onDecisionChung,
+      decisionHong: actions.onDecisionHong,
     };
 
     for (const [key, action] of Object.entries(actionMap)) {
