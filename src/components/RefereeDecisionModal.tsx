@@ -37,7 +37,6 @@ export const RefereeDecisionModal = ({
               "flex flex-col items-center gap-2"
             )}
           >
-            <span className="text-sm md:text-lg opacity-80">L2</span>
             <span>{chungName}</span>
             <span className="text-base md:text-xl font-normal">Vitória Azul</span>
           </button>
@@ -53,7 +52,6 @@ export const RefereeDecisionModal = ({
               "flex flex-col items-center gap-2"
             )}
           >
-            <span className="text-sm md:text-lg opacity-80">R2</span>
             <span>{hongName}</span>
             <span className="text-base md:text-xl font-normal">Vitória Vermelha</span>
           </button>

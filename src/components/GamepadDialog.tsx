@@ -25,6 +25,7 @@ const mappingLabels: Record<keyof GamepadMapping, { label: string; side: 'chung'
   hongGamjeom: { label: 'Gam-jeom', side: 'hong' },
   startPause: { label: 'Iniciar/Pausar', side: 'general' },
   resetRound: { label: 'Resetar Round', side: 'general' },
+  subtractMode: { label: 'Modo Correção (-)', side: 'general' },
   decisionChung: { label: 'Decisão Azul (Empate)', side: 'general' },
   decisionHong: { label: 'Decisão Vermelho (Empate)', side: 'general' },
 };
@@ -172,7 +173,7 @@ export const GamepadDialog = ({
               Controles Gerais
             </h3>
             <div className="grid gap-2">
-              {(['startPause', 'resetRound', 'decisionChung', 'decisionHong'] as const).map(renderMappingButton)}
+              {(['startPause', 'resetRound', 'subtractMode', 'decisionChung', 'decisionHong'] as const).map(renderMappingButton)}
             </div>
           </div>
 

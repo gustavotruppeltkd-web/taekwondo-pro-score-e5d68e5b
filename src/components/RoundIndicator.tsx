@@ -24,19 +24,19 @@ export const RoundIndicator = ({
           <div
             key={i}
             className={cn(
-              "w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center",
-              "font-bold text-sm md:text-base border-2 transition-all duration-300",
-              // Winner colors
-              result === 'chung' && "bg-chung border-chung-dark text-white",
-              result === 'hong' && "bg-hong border-hong-dark text-white",
+              "w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center",
+              "font-bold text-sm md:text-base transition-all duration-300",
+              // Winner colors - fully filled circle
+              result === 'chung' && "bg-chung text-white shadow-lg shadow-chung/50",
+              result === 'hong' && "bg-hong text-white shadow-lg shadow-hong/50",
               // Current round
-              !result && isCurrent && isResting && "bg-primary/50 border-primary text-primary-foreground animate-pulse-glow",
-              !result && isCurrent && !isResting && "bg-primary border-primary text-primary-foreground",
+              !result && isCurrent && isResting && "bg-primary/50 text-primary-foreground animate-pulse-glow border-2 border-primary",
+              !result && isCurrent && !isResting && "bg-primary text-primary-foreground border-2 border-primary",
               // Future rounds
-              !result && !isCurrent && "bg-muted border-muted-foreground/30 text-muted-foreground"
+              !result && !isCurrent && "bg-muted/50 text-muted-foreground border-2 border-muted-foreground/30"
             )}
           >
-            {roundNumber}
+            R{roundNumber}
           </div>
         );
       })}
