@@ -92,7 +92,7 @@ export const FighterPanel = ({
           {score.toString().padStart(2, '0')}
         </div>
 
-        {/* Gamjeom Counter - Extra large, no G label */}
+        {/* Gamjeom Counter - Extra large, no label */}
         <div className="flex items-center justify-center mt-8 md:mt-12">
           <span 
             className={cn(
@@ -101,9 +101,6 @@ export const FighterPanel = ({
             )}
           >
             {gamjeom}
-          </span>
-          <span className="text-gamjeom/70 text-xl md:text-2xl ml-2 uppercase font-medium">
-            faltas
           </span>
         </div>
       </div>

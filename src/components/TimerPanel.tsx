@@ -130,24 +130,24 @@ export const TimerPanel = ({
           {/* Time Adjustment Buttons */}
           <div className="flex items-center gap-2 mt-2">
             <button
-              onClick={() => onAdjustTime(-10)}
+              onClick={() => onAdjustTime(-1)}
               className={cn(
                 "px-2 py-1 text-xs md:text-sm rounded",
                 "bg-muted hover:bg-muted-foreground/20 text-foreground",
                 "transition-all duration-200 active:scale-95"
               )}
             >
-              -10s
+              -1s
             </button>
             <button
-              onClick={() => onAdjustTime(10)}
+              onClick={() => onAdjustTime(1)}
               className={cn(
                 "px-2 py-1 text-xs md:text-sm rounded",
                 "bg-muted hover:bg-muted-foreground/20 text-foreground",
                 "transition-all duration-200 active:scale-95"
               )}
             >
-              +10s
+              +1s
             </button>
           </div>
 
