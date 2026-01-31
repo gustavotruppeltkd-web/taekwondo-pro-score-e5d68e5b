@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { Play, Pause, RotateCcw, Settings, Gamepad2, Move } from "lucide-react";
+import { Play, Pause, RotateCcw, Settings, Gamepad2, Move, Minus, Plus } from "lucide-react";
 import { motion } from "framer-motion";
 import { RoundIndicator } from "./RoundIndicator";
 
@@ -12,12 +12,15 @@ interface TimerPanelProps {
   matchEnded: boolean;
   matchWinner: 'chung' | 'hong' | null;
   gamepadConnected: boolean;
+  isSubtractMode: boolean;
   roundResults: Array<'chung' | 'hong' | null>;
   winnerName?: string;
   onToggleTimer: () => void;
   onResetRound: () => void;
   onOpenSettings: () => void;
   onOpenGamepad: () => void;
+  onToggleSubtractMode: () => void;
+  onAdjustTime: (seconds: number) => void;
 }
 
 const formatTime = (seconds: number): string => {
@@ -35,12 +38,15 @@ export const TimerPanel = ({
   matchEnded,
   matchWinner,
   gamepadConnected,
+  isSubtractMode,
   roundResults,
   winnerName,
   onToggleTimer,
   onResetRound,
   onOpenSettings,
   onOpenGamepad,
+  onToggleSubtractMode,
+  onAdjustTime,
 }: TimerPanelProps) => {
   const isWarning = timeRemaining <= 30 && timeRemaining > 10;
   const isDanger = timeRemaining <= 10;
@@ -88,7 +94,9 @@ export const TimerPanel = ({
         {/* Timer Container */}
         <div className={cn(
           "bg-background/95 rounded-2xl p-3 md:p-5 scoreboard-shadow",
-          "border-4 border-muted flex flex-col items-center",
+          "border-4",
+          isSubtractMode ? "border-gamjeom animate-pulse" : "border-muted",
+          "flex flex-col items-center",
           "select-none",
           matchEnded && "opacity-50"
         )}>
@@ -119,6 +127,30 @@ export const TimerPanel = ({
             {formatTime(timeRemaining)}
           </div>
 
+          {/* Time Adjustment Buttons */}
+          <div className="flex items-center gap-2 mt-2">
+            <button
+              onClick={() => onAdjustTime(-10)}
+              className={cn(
+                "px-2 py-1 text-xs md:text-sm rounded",
+                "bg-muted hover:bg-muted-foreground/20 text-foreground",
+                "transition-all duration-200 active:scale-95"
+              )}
+            >
+              -10s
+            </button>
+            <button
+              onClick={() => onAdjustTime(10)}
+              className={cn(
+                "px-2 py-1 text-xs md:text-sm rounded",
+                "bg-muted hover:bg-muted-foreground/20 text-foreground",
+                "transition-all duration-200 active:scale-95"
+              )}
+            >
+              +10s
+            </button>
+          </div>
+
           {/* Control Buttons */}
           <div className="flex items-center gap-2 md:gap-3 mt-3 md:mt-4">
             <button
@@ -143,6 +175,21 @@ export const TimerPanel = ({
               )}
             >
               <RotateCcw className="w-4 h-4 md:w-5 md:h-5" />
+            </button>
+
+            {/* Subtract Mode Toggle */}
+            <button
+              onClick={onToggleSubtractMode}
+              className={cn(
+                "p-2 md:p-3 rounded-full",
+                "transition-all duration-200 active:scale-95",
+                isSubtractMode 
+                  ? "bg-gamjeom text-black ring-2 ring-gamjeom ring-offset-2 ring-offset-background"
+                  : "bg-muted hover:bg-muted-foreground/20 text-foreground"
+              )}
+              title="Modo Correção (Subtrair)"
+            >
+              <Minus className="w-4 h-4 md:w-5 md:h-5" />
             </button>
 
             <button

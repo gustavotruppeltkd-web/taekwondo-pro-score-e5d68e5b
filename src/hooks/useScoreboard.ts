@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { playRoundStartBeep, playRoundEndBeep, playTenSecondWarning, playScoreBeep, playFaultBeep } from './useAudio';
+import { PointEntry } from '@/components/PointHistorySidebar';
 
 export interface ScoreboardSettings {
   roundTime: number;
@@ -30,6 +31,9 @@ export interface ScoreboardState {
   showRoundWinner: boolean;
   showDecisionModal: boolean;
   roundResults: Array<'chung' | 'hong' | null>;
+  isSubtractMode: boolean;
+  chungHistory: PointEntry[];
+  hongHistory: PointEntry[];
 }
 
 const defaultSettings: ScoreboardSettings = {
@@ -67,10 +71,31 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
     showRoundWinner: false,
     showDecisionModal: false,
     roundResults: [],
+    isSubtractMode: false,
+    chungHistory: [],
+    hongHistory: [],
   });
 
   const timerRef = useRef<number | null>(null);
   const tenSecondAlertRef = useRef(false);
+
+  // Toggle subtract mode
+  const toggleSubtractMode = useCallback(() => {
+    setState(prev => ({ ...prev, isSubtractMode: !prev.isSubtractMode }));
+  }, []);
+
+  // Set subtract mode (for hold behavior)
+  const setSubtractMode = useCallback((active: boolean) => {
+    setState(prev => ({ ...prev, isSubtractMode: active }));
+  }, []);
+
+  // Adjust time manually
+  const adjustTime = useCallback((seconds: number) => {
+    setState(prev => ({
+      ...prev,
+      timeRemaining: Math.max(0, prev.timeRemaining + seconds),
+    }));
+  }, []);
 
   // Handle referee decision for tie
   const handleRefereeDecision = useCallback((winner: 'chung' | 'hong') => {
@@ -288,28 +313,71 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
     return newState;
   }, [settings.maxScore, settings.maxGamjeom, settings.totalRounds, settings.restTime, endRound]);
 
-  // Scoring functions
+  // Scoring functions with subtract mode support
   const addPoints = useCallback((fighter: 'chung' | 'hong', points: number) => {
     if (state.matchEnded || state.isResting) return;
+    
+    const actualPoints = state.isSubtractMode ? -points : points;
     playScoreBeep();
+    
     setState(prev => {
+      const newScore = Math.max(0, prev[fighter].score + actualPoints);
+      const historyKey = fighter === 'chung' ? 'chungHistory' : 'hongHistory';
+      const newHistory = [
+        ...prev[historyKey],
+        { value: actualPoints, type: 'score' as const, timestamp: Date.now() }
+      ];
+      
       const newState = {
         ...prev,
-        [fighter]: { ...prev[fighter], score: prev[fighter].score + points },
+        [fighter]: { ...prev[fighter], score: newScore },
+        [historyKey]: newHistory,
       };
       return checkImmediateVictory(newState);
     });
-  }, [checkImmediateVictory, state.matchEnded, state.isResting]);
+  }, [checkImmediateVictory, state.matchEnded, state.isResting, state.isSubtractMode]);
 
   const addGamjeom = useCallback((fighter: 'chung' | 'hong') => {
     if (state.matchEnded || state.isResting) return;
     playFaultBeep();
+    
     setState(prev => {
       const opponent = fighter === 'chung' ? 'hong' : 'chung';
+      
+      if (prev.isSubtractMode) {
+        // Subtract gamjeom (correction)
+        const newGamjeom = Math.max(0, prev[fighter].gamjeom - 1);
+        const opponentScore = Math.max(0, prev[opponent].score - 1);
+        const historyKey = fighter === 'chung' ? 'chungHistory' : 'hongHistory';
+        const newHistory = [
+          ...prev[historyKey],
+          { value: -1, type: 'gamjeom' as const, timestamp: Date.now() }
+        ];
+        
+        return {
+          ...prev,
+          [fighter]: { ...prev[fighter], gamjeom: newGamjeom },
+          [opponent]: { ...prev[opponent], score: opponentScore },
+          [historyKey]: newHistory,
+        };
+      }
+      
+      // Add gamjeom normally
+      const historyKey = fighter === 'chung' ? 'chungHistory' : 'hongHistory';
+      const opponentHistoryKey = opponent === 'chung' ? 'chungHistory' : 'hongHistory';
+      
       const newState = {
         ...prev,
         [fighter]: { ...prev[fighter], gamjeom: prev[fighter].gamjeom + 1 },
         [opponent]: { ...prev[opponent], score: prev[opponent].score + 1 },
+        [historyKey]: [
+          ...prev[historyKey],
+          { value: 1, type: 'gamjeom' as const, timestamp: Date.now() }
+        ],
+        [opponentHistoryKey]: [
+          ...prev[opponentHistoryKey],
+          { value: 1, type: 'score' as const, timestamp: Date.now() }
+        ],
       };
       return checkImmediateVictory(newState);
     });
@@ -338,6 +406,8 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
       roundWinner: null,
       showRoundWinner: false,
       showDecisionModal: false,
+      chungHistory: [],
+      hongHistory: [],
     }));
   }, [settings.roundTime]);
 
@@ -356,6 +426,9 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
       showRoundWinner: false,
       showDecisionModal: false,
       roundResults: [],
+      isSubtractMode: false,
+      chungHistory: [],
+      hongHistory: [],
     });
   }, [settings.roundTime]);
 
@@ -371,6 +444,8 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
       isRunning: false,
       roundWinner: null,
       showRoundWinner: false,
+      chungHistory: [],
+      hongHistory: [],
     }));
   }, [settings.roundTime]);
 
@@ -395,6 +470,8 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
                 isRunning: false,
                 roundWinner: null,
                 showRoundWinner: false,
+                chungHistory: [],
+                hongHistory: [],
               };
             } else {
               // Round ended by time
@@ -437,5 +514,8 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
     updateSettings,
     handleRefereeDecision,
     dismissRoundWinner,
+    toggleSubtractMode,
+    setSubtractMode,
+    adjustTime,
   };
 };

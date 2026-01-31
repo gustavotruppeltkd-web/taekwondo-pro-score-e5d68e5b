@@ -1,4 +1,6 @@
 import { cn } from "@/lib/utils";
+import { Minus } from "lucide-react";
+import { PointHistorySidebar, PointEntry } from "./PointHistorySidebar";
 
 interface FighterPanelProps {
   side: 'chung' | 'hong';
@@ -7,6 +9,8 @@ interface FighterPanelProps {
   gamjeom: number;
   roundsWon: number;
   roundsToWin: number;
+  isSubtractMode: boolean;
+  pointHistory: PointEntry[];
   onAddPoints: (points: number) => void;
   onAddGamjeom: () => void;
   animateScore?: boolean;
@@ -20,6 +24,8 @@ export const FighterPanel = ({
   gamjeom,
   roundsWon,
   roundsToWin,
+  isSubtractMode,
+  pointHistory,
   onAddPoints,
   onAddGamjeom,
   animateScore = false,
@@ -35,6 +41,9 @@ export const FighterPanel = ({
         disabled && "opacity-80"
       )}
     >
+      {/* Point History Sidebar */}
+      <PointHistorySidebar side={side} history={pointHistory} />
+
       {/* Rounds Won Indicator */}
       <div className="absolute top-2 md:top-4 left-0 right-0 flex justify-center gap-1.5 md:gap-2">
         {Array.from({ length: roundsToWin }, (_, i) => (
@@ -60,6 +69,16 @@ export const FighterPanel = ({
         </p>
       </div>
 
+      {/* Subtract Mode Indicator */}
+      {isSubtractMode && (
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 animate-pulse z-20">
+          <div className="bg-gamjeom text-black font-bold text-lg md:text-xl px-4 py-2 rounded-full flex items-center gap-2">
+            <Minus className="w-5 h-5" />
+            MODO CORREÇÃO
+          </div>
+        </div>
+      )}
+
       {/* Main Score */}
       <div className="flex flex-col items-center justify-center flex-1">
         <div
@@ -73,11 +92,18 @@ export const FighterPanel = ({
           {score.toString().padStart(2, '0')}
         </div>
 
-        {/* Gamjeom Counter - Bigger and more spaced */}
-        <div className="flex items-center gap-3 mt-6 md:mt-10">
-          <span className="text-gamjeom font-bold text-3xl md:text-5xl">G:</span>
-          <span className="font-digital text-gamjeom text-4xl md:text-6xl font-bold">
+        {/* Gamjeom Counter - Extra large, no G label */}
+        <div className="flex items-center justify-center mt-8 md:mt-12">
+          <span 
+            className={cn(
+              "font-digital text-gamjeom text-6xl md:text-7xl lg:text-8xl font-bold",
+              isSubtractMode && "ring-4 ring-gamjeom rounded-lg px-4 animate-pulse"
+            )}
+          >
             {gamjeom}
+          </span>
+          <span className="text-gamjeom/70 text-xl md:text-2xl ml-2 uppercase font-medium">
+            faltas
           </span>
         </div>
       </div>
@@ -85,57 +111,36 @@ export const FighterPanel = ({
       {/* Control Buttons */}
       <div className="absolute bottom-4 md:bottom-8 left-0 right-0 px-4">
         <div className="flex justify-center gap-2 md:gap-4 flex-wrap">
-          <button
-            onClick={() => onAddPoints(1)}
-            disabled={disabled}
-            className={cn(
-              "px-4 py-2 md:px-6 md:py-3 rounded-lg font-bold text-lg md:text-xl",
-              "bg-white/20 hover:bg-white/30 text-white",
-              "transition-all duration-200 active:scale-95",
-              "border-2 border-white/30",
-              "disabled:opacity-50 disabled:cursor-not-allowed"
-            )}
-          >
-            +1
-          </button>
-          <button
-            onClick={() => onAddPoints(2)}
-            disabled={disabled}
-            className={cn(
-              "px-4 py-2 md:px-6 md:py-3 rounded-lg font-bold text-lg md:text-xl",
-              "bg-white/20 hover:bg-white/30 text-white",
-              "transition-all duration-200 active:scale-95",
-              "border-2 border-white/30",
-              "disabled:opacity-50 disabled:cursor-not-allowed"
-            )}
-          >
-            +2
-          </button>
-          <button
-            onClick={() => onAddPoints(3)}
-            disabled={disabled}
-            className={cn(
-              "px-4 py-2 md:px-6 md:py-3 rounded-lg font-bold text-lg md:text-xl",
-              "bg-white/20 hover:bg-white/30 text-white",
-              "transition-all duration-200 active:scale-95",
-              "border-2 border-white/30",
-              "disabled:opacity-50 disabled:cursor-not-allowed"
-            )}
-          >
-            +3
-          </button>
+          {[1, 2, 3].map((points) => (
+            <button
+              key={points}
+              onClick={() => onAddPoints(points)}
+              disabled={disabled}
+              className={cn(
+                "px-4 py-2 md:px-6 md:py-3 rounded-lg font-bold text-lg md:text-xl",
+                "transition-all duration-200 active:scale-95",
+                "disabled:opacity-50 disabled:cursor-not-allowed",
+                isSubtractMode
+                  ? "bg-gamjeom/80 hover:bg-gamjeom text-black border-2 border-gamjeom"
+                  : "bg-white/20 hover:bg-white/30 text-white border-2 border-white/30"
+              )}
+            >
+              {isSubtractMode ? `-${points}` : `+${points}`}
+            </button>
+          ))}
           <button
             onClick={onAddGamjeom}
             disabled={disabled}
             className={cn(
               "px-4 py-2 md:px-6 md:py-3 rounded-lg font-bold text-lg md:text-xl",
-              "bg-gamjeom/80 hover:bg-gamjeom text-black",
               "transition-all duration-200 active:scale-95",
-              "border-2 border-gamjeom",
-              "disabled:opacity-50 disabled:cursor-not-allowed"
+              "disabled:opacity-50 disabled:cursor-not-allowed",
+              isSubtractMode
+                ? "bg-white/20 hover:bg-white/30 text-white border-2 border-white/30"
+                : "bg-gamjeom/80 hover:bg-gamjeom text-black border-2 border-gamjeom"
             )}
           >
-            G
+            {isSubtractMode ? '-F' : '+F'}
           </button>
         </div>
       </div>

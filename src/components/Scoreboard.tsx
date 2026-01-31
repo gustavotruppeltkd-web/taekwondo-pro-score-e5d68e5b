@@ -25,6 +25,9 @@ export const Scoreboard = () => {
     updateSettings,
     handleRefereeDecision,
     dismissRoundWinner,
+    toggleSubtractMode,
+    setSubtractMode,
+    adjustTime,
   } = useScoreboard();
 
   // Gamepad actions
@@ -39,6 +42,7 @@ export const Scoreboard = () => {
     onHongGamjeom: useCallback(() => addGamjeom('hong'), [addGamjeom]),
     onStartPause: toggleTimer,
     onResetRound: resetRound,
+    onSubtractMode: toggleSubtractMode,
     onDecisionChung: useCallback(() => {
       if (state.showDecisionModal) {
         handleRefereeDecision('chung');
@@ -74,6 +78,8 @@ export const Scoreboard = () => {
         gamjeom={state.chung.gamjeom}
         roundsWon={state.chung.roundsWon}
         roundsToWin={roundsToWin}
+        isSubtractMode={state.isSubtractMode}
+        pointHistory={state.chungHistory}
         onAddPoints={(points) => addPoints('chung', points)}
         onAddGamjeom={() => addGamjeom('chung')}
         disabled={state.matchEnded || state.isResting}
@@ -87,6 +93,8 @@ export const Scoreboard = () => {
         gamjeom={state.hong.gamjeom}
         roundsWon={state.hong.roundsWon}
         roundsToWin={roundsToWin}
+        isSubtractMode={state.isSubtractMode}
+        pointHistory={state.hongHistory}
         onAddPoints={(points) => addPoints('hong', points)}
         onAddGamjeom={() => addGamjeom('hong')}
         disabled={state.matchEnded || state.isResting}
@@ -102,12 +110,15 @@ export const Scoreboard = () => {
         matchEnded={state.matchEnded}
         matchWinner={state.matchWinner}
         gamepadConnected={gamepadConnected}
+        isSubtractMode={state.isSubtractMode}
         roundResults={state.roundResults}
         winnerName={state.matchWinner === 'chung' ? settings.chungName : settings.hongName}
         onToggleTimer={toggleTimer}
         onResetRound={resetRound}
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenGamepad={() => setGamepadOpen(true)}
+        onToggleSubtractMode={toggleSubtractMode}
+        onAdjustTime={adjustTime}
       />
 
       {/* Round Winner Banner */}
