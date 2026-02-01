@@ -59,12 +59,12 @@ export const FighterPanel = ({
         ))}
       </div>
 
-      {/* Fighter Name */}
+      {/* Fighter Name - Extra Large */}
       <div className="absolute top-10 md:top-14 left-0 right-0 text-center">
-        <h2 className="text-lg md:text-2xl font-bold uppercase tracking-widest text-white/90 truncate px-4">
+        <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold uppercase tracking-widest text-white/95 truncate px-4 drop-shadow-lg">
           {name}
         </h2>
-        <p className="text-sm md:text-base text-white/60 font-medium">
+        <p className="text-base md:text-lg text-white/60 font-medium mt-1">
           {isChung ? 'CHUNG' : 'HONG'}
         </p>
       </div>

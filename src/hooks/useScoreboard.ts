@@ -18,6 +18,15 @@ export interface FighterScore {
   roundsWon: number;
 }
 
+export interface RoundSnapshot {
+  chung: FighterScore;
+  hong: FighterScore;
+  currentRound: number;
+  roundResults: Array<'chung' | 'hong' | null>;
+  chungHistory: PointEntry[];
+  hongHistory: PointEntry[];
+}
+
 export interface ScoreboardState {
   chung: FighterScore;
   hong: FighterScore;
@@ -34,6 +43,7 @@ export interface ScoreboardState {
   isSubtractMode: boolean;
   chungHistory: PointEntry[];
   hongHistory: PointEntry[];
+  previousRoundSnapshot: RoundSnapshot | null;
 }
 
 const defaultSettings: ScoreboardSettings = {
@@ -74,6 +84,7 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
     isSubtractMode: false,
     chungHistory: [],
     hongHistory: [],
+    previousRoundSnapshot: null,
   });
 
   const timerRef = useRef<number | null>(null);
@@ -97,9 +108,48 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
     }));
   }, []);
 
+  // Revert to previous round
+  const revertToPreviousRound = useCallback(() => {
+    setState(prev => {
+      if (!prev.previousRoundSnapshot) return prev;
+      
+      const snapshot = prev.previousRoundSnapshot;
+      tenSecondAlertRef.current = false;
+      
+      return {
+        ...prev,
+        chung: { ...snapshot.chung },
+        hong: { ...snapshot.hong },
+        currentRound: snapshot.currentRound,
+        roundResults: [...snapshot.roundResults],
+        chungHistory: [...snapshot.chungHistory],
+        hongHistory: [...snapshot.hongHistory],
+        timeRemaining: settings.roundTime,
+        isRunning: false,
+        isResting: false,
+        roundWinner: null,
+        showRoundWinner: false,
+        showDecisionModal: false,
+        matchEnded: false,
+        matchWinner: null,
+        previousRoundSnapshot: null,
+      };
+    });
+  }, [settings.roundTime]);
+
   // Handle referee decision for tie
   const handleRefereeDecision = useCallback((winner: 'chung' | 'hong') => {
     setState(prev => {
+      // Save snapshot before changing round
+      const snapshot: RoundSnapshot = {
+        chung: { ...prev.chung },
+        hong: { ...prev.hong },
+        currentRound: prev.currentRound,
+        roundResults: [...prev.roundResults],
+        chungHistory: [...prev.chungHistory],
+        hongHistory: [...prev.hongHistory],
+      };
+
       const newChung = { ...prev.chung };
       const newHong = { ...prev.hong };
       const newResults = [...prev.roundResults];
@@ -126,6 +176,7 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
           roundWinner: winner,
           matchEnded: true,
           matchWinner: 'chung',
+          previousRoundSnapshot: snapshot,
         };
       }
       if (newHong.roundsWon >= roundsToWin) {
@@ -139,6 +190,7 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
           roundWinner: winner,
           matchEnded: true,
           matchWinner: 'hong',
+          previousRoundSnapshot: snapshot,
         };
       }
       
@@ -154,6 +206,7 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
         isResting: true,
         isRunning: true,
         timeRemaining: settings.restTime,
+        previousRoundSnapshot: snapshot,
       };
     });
   }, [settings.totalRounds, settings.restTime]);
@@ -170,12 +223,23 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
   const endRound = useCallback((currentState: ScoreboardState): ScoreboardState => {
     const { chung, hong, currentRound } = currentState;
     
+    // Save snapshot before changing round
+    const snapshot: RoundSnapshot = {
+      chung: { ...chung },
+      hong: { ...hong },
+      currentRound,
+      roundResults: [...currentState.roundResults],
+      chungHistory: [...currentState.chungHistory],
+      hongHistory: [...currentState.hongHistory],
+    };
+    
     // Check for tie
     if (chung.score === hong.score) {
       return {
         ...currentState,
         isRunning: false,
         showDecisionModal: true,
+        previousRoundSnapshot: snapshot,
       };
     }
     
@@ -206,6 +270,7 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
         roundWinner,
         matchWinner: 'chung',
         showRoundWinner: true,
+        previousRoundSnapshot: snapshot,
       };
     }
     if (newHong.roundsWon >= roundsToWin) {
@@ -219,6 +284,7 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
         roundWinner,
         matchWinner: 'hong',
         showRoundWinner: true,
+        previousRoundSnapshot: snapshot,
       };
     }
     
@@ -233,6 +299,7 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
       timeRemaining: settings.restTime,
       roundWinner,
       showRoundWinner: true,
+      previousRoundSnapshot: snapshot,
     };
   }, [settings.totalRounds, settings.restTime]);
 
@@ -251,6 +318,15 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
 
     // Gamjeom limit - opponent wins the round
     if (chung.gamjeom >= settings.maxGamjeom) {
+      const snapshot: RoundSnapshot = {
+        chung: { ...chung },
+        hong: { ...hong },
+        currentRound,
+        roundResults: [...newState.roundResults],
+        chungHistory: [...newState.chungHistory],
+        hongHistory: [...newState.hongHistory],
+      };
+      
       const newHong = { ...hong, roundsWon: hong.roundsWon + 1 };
       const newResults = [...newState.roundResults];
       newResults[currentRound - 1] = 'hong';
@@ -266,6 +342,7 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
           roundWinner: 'hong',
           matchWinner: 'hong',
           showRoundWinner: true,
+          previousRoundSnapshot: snapshot,
         };
       }
       return {
@@ -277,10 +354,20 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
         timeRemaining: settings.restTime,
         roundWinner: 'hong',
         showRoundWinner: true,
+        previousRoundSnapshot: snapshot,
       };
     }
 
     if (hong.gamjeom >= settings.maxGamjeom) {
+      const snapshot: RoundSnapshot = {
+        chung: { ...chung },
+        hong: { ...hong },
+        currentRound,
+        roundResults: [...newState.roundResults],
+        chungHistory: [...newState.chungHistory],
+        hongHistory: [...newState.hongHistory],
+      };
+      
       const newChung = { ...chung, roundsWon: chung.roundsWon + 1 };
       const newResults = [...newState.roundResults];
       newResults[currentRound - 1] = 'chung';
@@ -296,6 +383,7 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
           roundWinner: 'chung',
           matchWinner: 'chung',
           showRoundWinner: true,
+          previousRoundSnapshot: snapshot,
         };
       }
       return {
@@ -307,6 +395,7 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
         timeRemaining: settings.restTime,
         roundWinner: 'chung',
         showRoundWinner: true,
+        previousRoundSnapshot: snapshot,
       };
     }
 
@@ -429,6 +518,7 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
       isSubtractMode: false,
       chungHistory: [],
       hongHistory: [],
+      previousRoundSnapshot: null,
     });
   }, [settings.roundTime]);
 
@@ -498,9 +588,25 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
     };
   }, [state.isRunning, state.matchEnded, settings.roundTime, settings.restTime, endRound]);
 
+  // Update settings and auto-restart round
   const updateSettings = useCallback((newSettings: Partial<ScoreboardSettings>) => {
     setSettings(prev => ({ ...prev, ...newSettings }));
-  }, []);
+    // Auto-restart current round when settings are saved
+    tenSecondAlertRef.current = false;
+    setState(prev => ({
+      ...prev,
+      chung: { ...prev.chung, score: 0, gamjeom: 0 },
+      hong: { ...prev.hong, score: 0, gamjeom: 0 },
+      timeRemaining: newSettings.roundTime || settings.roundTime,
+      isRunning: false,
+      isResting: false,
+      roundWinner: null,
+      showRoundWinner: false,
+      showDecisionModal: false,
+      chungHistory: [],
+      hongHistory: [],
+    }));
+  }, [settings.roundTime]);
 
   return {
     state,
@@ -517,5 +623,6 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
     toggleSubtractMode,
     setSubtractMode,
     adjustTime,
+    revertToPreviousRound,
   };
 };

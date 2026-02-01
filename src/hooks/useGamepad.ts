@@ -16,20 +16,44 @@ export interface GamepadMapping {
   decisionHong: number | null;
 }
 
+// PS3/PS4 Standard Mapping (as specified by user)
+// HONG (Red):
+//   X (button 0): +1 point
+//   R1 (button 5): +2 points
+//   R2 (button 7): +3 points
+//   Triangle (button 3): Gamjeom
+// CHUNG (Blue):
+//   D-Pad Down (button 13): +1 point
+//   L1 (button 4): +2 points
+//   L2 (button 6): +3 points
+//   D-Pad Up (button 12): Gamjeom
+// General:
+//   R3 (button 11): Start/Pause
+//   L3 (button 10): Reset Round
+//   D-Pad Right (button 15): Decision Hong (Red wins)
+//   D-Pad Left (button 14): Decision Chung (Blue wins)
+
 export const defaultMapping: GamepadMapping = {
-  chungPlus1: 0,      // X
-  chungPlus2: 2,      // Square
-  chungPlus3: 3,      // Triangle
-  chungGamjeom: 4,    // L1
-  hongPlus1: 1,       // Circle
-  hongPlus2: 14,      // D-pad Left
-  hongPlus3: 15,      // D-pad Right
-  hongGamjeom: 5,     // R1
-  startPause: 9,      // Options
-  resetRound: 8,      // Share
-  subtractMode: 6,    // L2
-  decisionChung: 12,  // D-pad Up
-  decisionHong: 13,   // D-pad Down
+  // Hong (Red) controls
+  hongPlus1: 0,       // X button
+  hongPlus2: 5,       // R1
+  hongPlus3: 7,       // R2
+  hongGamjeom: 3,     // Triangle
+  
+  // Chung (Blue) controls
+  chungPlus1: 13,     // D-Pad Down
+  chungPlus2: 4,      // L1
+  chungPlus3: 6,      // L2
+  chungGamjeom: 12,   // D-Pad Up
+  
+  // General controls
+  startPause: 11,     // R3 (Right analog click)
+  resetRound: 10,     // L3 (Left analog click)
+  decisionHong: 15,   // D-Pad Right (Red wins)
+  decisionChung: 14,  // D-Pad Left (Blue wins)
+  
+  // Subtract mode - not mapped by default, toggle via UI
+  subtractMode: null,
 };
 
 interface GamepadActions {
