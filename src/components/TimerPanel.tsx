@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Play, Pause, RotateCcw, Settings, Gamepad2, Move, Minus, ChevronUp, ChevronDown, Undo2 } from "lucide-react";
+import { Play, Pause, RotateCcw, Settings, Gamepad2, Move, Minus, Plus, ChevronUp, ChevronDown, Undo2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RoundIndicator } from "./RoundIndicator";
-import { Slider } from "@/components/ui/slider";
 
 interface TimerPanelProps {
   timeRemaining: number;
@@ -127,16 +126,59 @@ export const TimerPanel = ({
             </div>
           )}
 
-          {/* Main Timer - Always visible */}
-          <div
-            className={cn(
-              "font-digital text-3xl md:text-5xl lg:text-6xl font-bold leading-none",
-              isDanger ? "text-timer-danger text-glow-danger" :
-              isWarning ? "text-timer-warning text-glow-warning" :
-              "text-timer text-glow-timer"
-            )}
-          >
-            {formatTime(timeRemaining)}
+          {/* Main Timer with Play/Pause next to it */}
+          <div className="flex items-center gap-3">
+            <div
+              className={cn(
+                "font-digital text-3xl md:text-5xl lg:text-6xl font-bold leading-none",
+                isDanger ? "text-timer-danger text-glow-danger" :
+                isWarning ? "text-timer-warning text-glow-warning" :
+                "text-timer text-glow-timer"
+              )}
+            >
+              {formatTime(timeRemaining)}
+            </div>
+            
+            {/* Play/Pause Button - Always visible next to timer */}
+            <button
+              onClick={onToggleTimer}
+              disabled={matchEnded}
+              className={cn(
+                "p-2 md:p-3 rounded-full",
+                "bg-primary hover:bg-primary/80 text-primary-foreground",
+                "transition-all duration-200 active:scale-95",
+                "disabled:opacity-50 disabled:cursor-not-allowed"
+              )}
+            >
+              {isRunning ? <Pause className="w-5 h-5 md:w-6 md:h-6" /> : <Play className="w-5 h-5 md:w-6 md:h-6" />}
+            </button>
+          </div>
+
+          {/* Scale Buttons - Small +/- buttons */}
+          <div className="flex items-center gap-2 mt-2">
+            <button
+              onClick={() => setScale(Math.max(50, scale - 10))}
+              className={cn(
+                "w-6 h-6 flex items-center justify-center rounded",
+                "bg-muted hover:bg-muted-foreground/20 text-foreground",
+                "transition-all duration-200 active:scale-95"
+              )}
+              title="Diminuir painel"
+            >
+              <Minus className="w-3 h-3" />
+            </button>
+            <span className="text-xs text-muted-foreground w-8 text-center">{scale}%</span>
+            <button
+              onClick={() => setScale(Math.min(150, scale + 10))}
+              className={cn(
+                "w-6 h-6 flex items-center justify-center rounded",
+                "bg-muted hover:bg-muted-foreground/20 text-foreground",
+                "transition-all duration-200 active:scale-95"
+              )}
+              title="Aumentar painel"
+            >
+              <Plus className="w-3 h-3" />
+            </button>
           </div>
 
           {/* Compact Toggle Button */}
@@ -185,37 +227,8 @@ export const TimerPanel = ({
                   </button>
                 </div>
 
-                {/* Scale Slider */}
-                <div className="mt-3 w-full px-2">
-                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                    <span>Tamanho</span>
-                    <span>{scale}%</span>
-                  </div>
-                  <Slider
-                    value={[scale]}
-                    onValueChange={(value) => setScale(value[0])}
-                    min={50}
-                    max={150}
-                    step={10}
-                    className="w-32"
-                  />
-                </div>
-
                 {/* Control Buttons */}
                 <div className="flex items-center gap-2 md:gap-3 mt-3 md:mt-4">
-                  <button
-                    onClick={onToggleTimer}
-                    disabled={matchEnded}
-                    className={cn(
-                      "p-2 md:p-3 rounded-full",
-                      "bg-primary hover:bg-primary/80 text-primary-foreground",
-                      "transition-all duration-200 active:scale-95",
-                      "disabled:opacity-50 disabled:cursor-not-allowed"
-                    )}
-                  >
-                    {isRunning ? <Pause className="w-4 h-4 md:w-5 md:h-5" /> : <Play className="w-4 h-4 md:w-5 md:h-5" />}
-                  </button>
-                  
                   <button
                     onClick={onResetRound}
                     className={cn(
@@ -285,24 +298,6 @@ export const TimerPanel = ({
               </motion.div>
             )}
           </AnimatePresence>
-
-          {/* Compact Mode - Only Play/Pause visible */}
-          {isCompact && (
-            <div className="flex items-center gap-2 mt-2">
-              <button
-                onClick={onToggleTimer}
-                disabled={matchEnded}
-                className={cn(
-                  "p-2 md:p-3 rounded-full",
-                  "bg-primary hover:bg-primary/80 text-primary-foreground",
-                  "transition-all duration-200 active:scale-95",
-                  "disabled:opacity-50 disabled:cursor-not-allowed"
-                )}
-              >
-                {isRunning ? <Pause className="w-4 h-4 md:w-5 md:h-5" /> : <Play className="w-4 h-4 md:w-5 md:h-5" />}
-              </button>
-            </div>
-          )}
         </div>
       </motion.div>
     </div>
