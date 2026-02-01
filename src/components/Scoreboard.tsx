@@ -28,6 +28,7 @@ export const Scoreboard = () => {
     toggleSubtractMode,
     setSubtractMode,
     adjustTime,
+    revertToPreviousRound,
   } = useScoreboard();
 
   // Gamepad actions
@@ -113,12 +114,14 @@ export const Scoreboard = () => {
         isSubtractMode={state.isSubtractMode}
         roundResults={state.roundResults}
         winnerName={state.matchWinner === 'chung' ? settings.chungName : settings.hongName}
+        canRevertRound={state.previousRoundSnapshot !== null}
         onToggleTimer={toggleTimer}
         onResetRound={resetRound}
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenGamepad={() => setGamepadOpen(true)}
         onToggleSubtractMode={toggleSubtractMode}
         onAdjustTime={adjustTime}
+        onRevertToPreviousRound={revertToPreviousRound}
       />
 
       {/* Round Winner Banner */}
