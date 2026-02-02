@@ -1,7 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Play, Pause, RotateCcw, Settings, Gamepad2, Move, Minus, ChevronUp, ChevronDown, Undo2, Maximize2 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import { RoundIndicator } from "./RoundIndicator";
 
 interface TimerPanelProps {
@@ -55,11 +55,75 @@ export const TimerPanel = ({
 }: TimerPanelProps) => {
   const [isCompact, setIsCompact] = useState(false);
   const [scale, setScale] = useState(100);
+  const dragControls = useDragControls();
+
+  // Pinch to scale (touch only)
+  const activePointersRef = useRef(new Map<number, { x: number; y: number }>());
+  const pinchStartRef = useRef<{ distance: number; scale: number } | null>(null);
   
   const isWarning = timeRemaining <= 30 && timeRemaining > 10;
   const isDanger = timeRemaining <= 10;
 
   const scaleValue = scale / 100;
+
+  const clampScale = useCallback((value: number) => Math.min(150, Math.max(50, value)), []);
+
+  const handleStartDrag = useCallback((e: React.PointerEvent) => {
+    // Keep drag on desktop mouse, avoid stealing touch gestures (pinch)
+    if (e.pointerType !== "mouse") return;
+    const target = e.target as HTMLElement;
+    if (target.closest("button,[data-no-drag]")) return;
+    dragControls.start(e);
+  }, [dragControls]);
+
+  const handlePinchPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== "touch") return;
+    const target = e.target as HTMLElement;
+    if (target.closest("button,[data-no-pinch]")) return;
+
+    const el = e.currentTarget;
+    try {
+      el.setPointerCapture(e.pointerId);
+    } catch {
+      // ignore
+    }
+    activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (activePointersRef.current.size === 2) {
+      const [a, b] = Array.from(activePointersRef.current.values());
+      const distance = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+      pinchStartRef.current = { distance, scale };
+    }
+  }, [scale]);
+
+  const handlePinchPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== "touch") return;
+    if (!activePointersRef.current.has(e.pointerId)) return;
+    activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (activePointersRef.current.size !== 2 || !pinchStartRef.current) return;
+
+    const [a, b] = Array.from(activePointersRef.current.values());
+    const distance = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+    const ratio = distance / pinchStartRef.current.distance;
+    const newScale = clampScale(Math.round(pinchStartRef.current.scale * ratio));
+    setScale(newScale);
+  }, [clampScale]);
+
+  const handlePinchPointerEnd = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (activePointersRef.current.has(e.pointerId)) {
+      activePointersRef.current.delete(e.pointerId);
+    }
+    if (activePointersRef.current.size < 2) {
+      pinchStartRef.current = null;
+    }
+
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const handleResizePointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
@@ -90,20 +154,33 @@ export const TimerPanel = ({
 
     document.addEventListener('pointermove', handlePointerMove);
     document.addEventListener('pointerup', handlePointerUp);
+    document.addEventListener('pointercancel', handlePointerUp);
   }, [scale]);
 
   return (
     <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
       <motion.div 
         drag
+        dragControls={dragControls}
+        dragListener={false}
         dragMomentum={false}
         dragConstraints={{ left: -400, right: 400, top: -300, bottom: 300 }}
+        onPointerDown={handleStartDrag}
         className="pointer-events-auto flex flex-col items-center cursor-grab active:cursor-grabbing mt-16 md:mt-20"
         whileDrag={{ scale: 1.02, cursor: 'grabbing' }}
         style={{ transform: `scale(${scaleValue})` }}
       >
         {/* Drag Handle Indicator */}
-        <div className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-40 flex items-center gap-1">
+        <div
+          onPointerDown={(e) => {
+            // Allow dragging on touch only via this handle
+            e.stopPropagation();
+            dragControls.start(e);
+          }}
+          className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-40 flex items-center gap-1 cursor-grab active:cursor-grabbing"
+          title="Arraste para mover"
+          data-no-pinch
+        >
           <Move className="w-4 h-4 text-foreground" />
           <span className="text-xs text-foreground">Arraste</span>
         </div>
@@ -133,11 +210,17 @@ export const TimerPanel = ({
         )}
 
         {/* Timer Container */}
-        <div className={cn(
+        <div
+          onPointerDown={handlePinchPointerDown}
+          onPointerMove={handlePinchPointerMove}
+          onPointerUp={handlePinchPointerEnd}
+          onPointerCancel={handlePinchPointerEnd}
+          className={cn(
           "bg-background/95 rounded-2xl p-3 md:p-5 scoreboard-shadow",
           "border-4 relative",
           isSubtractMode ? "border-gamjeom animate-pulse" : "border-muted",
           "flex flex-col items-center",
+          "touch-none",
           "select-none",
           matchEnded && "opacity-50"
         )}>
@@ -155,6 +238,8 @@ export const TimerPanel = ({
             )}
             style={{ touchAction: 'none' }}
             title={`Escala: ${scale}% - Arraste para redimensionar`}
+            data-no-drag
+            data-no-pinch
           >
             <Maximize2 className="w-4 h-4 text-primary-foreground" />
           </div>
