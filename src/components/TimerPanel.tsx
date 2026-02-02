@@ -1,6 +1,6 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
-import { Play, Pause, RotateCcw, Settings, Gamepad2, Move, Minus, ChevronUp, ChevronDown, Undo2 } from "lucide-react";
+import { Play, Pause, RotateCcw, Settings, Gamepad2, Move, Minus, ChevronUp, ChevronDown, Undo2, Maximize2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RoundIndicator } from "./RoundIndicator";
 
@@ -55,50 +55,41 @@ export const TimerPanel = ({
 }: TimerPanelProps) => {
   const [isCompact, setIsCompact] = useState(false);
   const [scale, setScale] = useState(100);
-  const isResizing = useRef(false);
-  const startPos = useRef({ x: 0, y: 0, scale: 100 });
   
   const isWarning = timeRemaining <= 30 && timeRemaining > 10;
   const isDanger = timeRemaining <= 10;
 
   const scaleValue = scale / 100;
 
-  const handleResizeStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+  const handleResizePointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    isResizing.current = true;
     
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const target = e.currentTarget as HTMLElement;
+    target.setPointerCapture(e.pointerId);
     
-    startPos.current = { x: clientX, y: clientY, scale };
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startScale = scale;
 
-    const handleMove = (moveEvent: MouseEvent | TouchEvent) => {
-      if (!isResizing.current) return;
-      
-      const moveX = 'touches' in moveEvent ? moveEvent.touches[0].clientX : moveEvent.clientX;
-      const moveY = 'touches' in moveEvent ? moveEvent.touches[0].clientY : moveEvent.clientY;
-      
-      const deltaX = moveX - startPos.current.x;
-      const deltaY = moveY - startPos.current.y;
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const deltaY = moveEvent.clientY - startY;
+      // Diagonal movement (right-down = increase, left-up = decrease)
       const delta = (deltaX + deltaY) / 2;
       
-      const newScale = Math.min(150, Math.max(50, startPos.current.scale + delta / 3));
+      const newScale = Math.min(150, Math.max(50, startScale + delta / 2));
       setScale(Math.round(newScale));
     };
 
-    const handleEnd = () => {
-      isResizing.current = false;
-      document.removeEventListener('mousemove', handleMove);
-      document.removeEventListener('mouseup', handleEnd);
-      document.removeEventListener('touchmove', handleMove);
-      document.removeEventListener('touchend', handleEnd);
+    const handlePointerUp = () => {
+      target.releasePointerCapture(e.pointerId);
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
     };
 
-    document.addEventListener('mousemove', handleMove);
-    document.addEventListener('mouseup', handleEnd);
-    document.addEventListener('touchmove', handleMove);
-    document.addEventListener('touchend', handleEnd);
+    document.addEventListener('pointermove', handlePointerMove);
+    document.addEventListener('pointerup', handlePointerUp);
   }, [scale]);
 
   return (
@@ -109,7 +100,6 @@ export const TimerPanel = ({
         dragConstraints={{ left: -400, right: 400, top: -300, bottom: 300 }}
         className="pointer-events-auto flex flex-col items-center cursor-grab active:cursor-grabbing mt-16 md:mt-20"
         whileDrag={{ scale: 1.02, cursor: 'grabbing' }}
-        whileHover={{ scale: 1.01 }}
         style={{ transform: `scale(${scaleValue})` }}
       >
         {/* Drag Handle Indicator */}
@@ -151,29 +141,22 @@ export const TimerPanel = ({
           "select-none",
           matchEnded && "opacity-50"
         )}>
-          {/* Resize Handle - Top Right Corner */}
+          {/* Resize Handle - Top Right Corner - Uses onPointerDown to bypass framer drag */}
           <div
-            onMouseDown={handleResizeStart}
-            onTouchStart={handleResizeStart}
+            onPointerDown={handleResizePointerDown}
             className={cn(
-              "absolute -top-2 -right-2 w-6 h-6",
-              "bg-primary/80 hover:bg-primary rounded-full",
+              "absolute -top-3 -right-3 w-8 h-8",
+              "bg-primary hover:bg-primary/80 rounded-full",
               "cursor-nwse-resize",
               "flex items-center justify-center",
               "transition-colors duration-200",
-              "shadow-lg border-2 border-background"
+              "shadow-lg border-2 border-background",
+              "z-50"
             )}
+            style={{ touchAction: 'none' }}
             title={`Escala: ${scale}% - Arraste para redimensionar`}
           >
-            <svg 
-              className="w-3 h-3 text-primary-foreground rotate-90" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="3"
-            >
-              <path d="M4 14l6 6m4-10l6 6" />
-            </svg>
+            <Maximize2 className="w-4 h-4 text-primary-foreground" />
           </div>
 
           {/* Round Indicator - Always visible */}
