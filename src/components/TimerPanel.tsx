@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { Play, Pause, RotateCcw, Settings, Gamepad2, Move, Minus, Plus, ChevronUp, ChevronDown, Undo2 } from "lucide-react";
+import { Play, Pause, RotateCcw, Settings, Gamepad2, Move, Minus, ChevronUp, ChevronDown, Undo2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RoundIndicator } from "./RoundIndicator";
 
@@ -55,11 +55,51 @@ export const TimerPanel = ({
 }: TimerPanelProps) => {
   const [isCompact, setIsCompact] = useState(false);
   const [scale, setScale] = useState(100);
+  const isResizing = useRef(false);
+  const startPos = useRef({ x: 0, y: 0, scale: 100 });
   
   const isWarning = timeRemaining <= 30 && timeRemaining > 10;
   const isDanger = timeRemaining <= 10;
 
   const scaleValue = scale / 100;
+
+  const handleResizeStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    isResizing.current = true;
+    
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    
+    startPos.current = { x: clientX, y: clientY, scale };
+
+    const handleMove = (moveEvent: MouseEvent | TouchEvent) => {
+      if (!isResizing.current) return;
+      
+      const moveX = 'touches' in moveEvent ? moveEvent.touches[0].clientX : moveEvent.clientX;
+      const moveY = 'touches' in moveEvent ? moveEvent.touches[0].clientY : moveEvent.clientY;
+      
+      const deltaX = moveX - startPos.current.x;
+      const deltaY = moveY - startPos.current.y;
+      const delta = (deltaX + deltaY) / 2;
+      
+      const newScale = Math.min(150, Math.max(50, startPos.current.scale + delta / 3));
+      setScale(Math.round(newScale));
+    };
+
+    const handleEnd = () => {
+      isResizing.current = false;
+      document.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('mouseup', handleEnd);
+      document.removeEventListener('touchmove', handleMove);
+      document.removeEventListener('touchend', handleEnd);
+    };
+
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('mouseup', handleEnd);
+    document.addEventListener('touchmove', handleMove);
+    document.addEventListener('touchend', handleEnd);
+  }, [scale]);
 
   return (
     <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
@@ -105,12 +145,37 @@ export const TimerPanel = ({
         {/* Timer Container */}
         <div className={cn(
           "bg-background/95 rounded-2xl p-3 md:p-5 scoreboard-shadow",
-          "border-4",
+          "border-4 relative",
           isSubtractMode ? "border-gamjeom animate-pulse" : "border-muted",
           "flex flex-col items-center",
           "select-none",
           matchEnded && "opacity-50"
         )}>
+          {/* Resize Handle - Top Right Corner */}
+          <div
+            onMouseDown={handleResizeStart}
+            onTouchStart={handleResizeStart}
+            className={cn(
+              "absolute -top-2 -right-2 w-6 h-6",
+              "bg-primary/80 hover:bg-primary rounded-full",
+              "cursor-nwse-resize",
+              "flex items-center justify-center",
+              "transition-colors duration-200",
+              "shadow-lg border-2 border-background"
+            )}
+            title={`Escala: ${scale}% - Arraste para redimensionar`}
+          >
+            <svg 
+              className="w-3 h-3 text-primary-foreground rotate-90" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="3"
+            >
+              <path d="M4 14l6 6m4-10l6 6" />
+            </svg>
+          </div>
+
           {/* Round Indicator - Always visible */}
           <RoundIndicator
             totalRounds={totalRounds}
@@ -151,33 +216,6 @@ export const TimerPanel = ({
               )}
             >
               {isRunning ? <Pause className="w-5 h-5 md:w-6 md:h-6" /> : <Play className="w-5 h-5 md:w-6 md:h-6" />}
-            </button>
-          </div>
-
-          {/* Scale Buttons - Small +/- buttons */}
-          <div className="flex items-center gap-2 mt-2">
-            <button
-              onClick={() => setScale(Math.max(50, scale - 10))}
-              className={cn(
-                "w-6 h-6 flex items-center justify-center rounded",
-                "bg-muted hover:bg-muted-foreground/20 text-foreground",
-                "transition-all duration-200 active:scale-95"
-              )}
-              title="Diminuir painel"
-            >
-              <Minus className="w-3 h-3" />
-            </button>
-            <span className="text-xs text-muted-foreground w-8 text-center">{scale}%</span>
-            <button
-              onClick={() => setScale(Math.min(150, scale + 10))}
-              className={cn(
-                "w-6 h-6 flex items-center justify-center rounded",
-                "bg-muted hover:bg-muted-foreground/20 text-foreground",
-                "transition-all duration-200 active:scale-95"
-              )}
-              title="Aumentar painel"
-            >
-              <Plus className="w-3 h-3" />
             </button>
           </div>
 
