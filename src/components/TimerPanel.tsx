@@ -1,6 +1,6 @@
 import { useState, useCallback, useLayoutEffect, useMemo, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { Play, Pause, RotateCcw, Settings, Gamepad2, Move, Minus, ChevronUp, ChevronDown, Undo2 } from "lucide-react";
+import { Play, Pause, RotateCcw, Settings, Gamepad2, GripHorizontal, Minus, ChevronUp, ChevronDown, Undo2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Rnd } from "react-rnd";
 import { RoundIndicator } from "./RoundIndicator";
@@ -33,6 +33,12 @@ const formatTime = (seconds: number): string => {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
+// Base dimensions for scaling calculations
+const BASE_WIDTH = 400;
+const BASE_HEIGHT = 280;
+const MIN_WIDTH = 320;
+const MIN_HEIGHT = 240;
+
 export const TimerPanel = ({
   timeRemaining,
   currentRound,
@@ -57,346 +63,331 @@ export const TimerPanel = ({
   const [isCompact, setIsCompact] = useState(false);
   const boundsRef = useRef<HTMLDivElement | null>(null);
   const initializedRef = useRef(false);
-  const [isResizing, setIsResizing] = useState(false);
 
-  const [rect, setRect] = useState<{ x: number; y: number; width: number; height: number }>(() => {
-    // Initial guess; we recenter with real viewport bounds on mount.
-    const isSmall = typeof window !== "undefined" && window.innerWidth < 640;
-    return {
-      x: 0,
-      y: 0,
-      width: isSmall ? 340 : 520,
-      height: isSmall ? 260 : 320,
-    };
+  // Panel position and size state
+  const [panelState, setPanelState] = useState({
+    x: 0,
+    y: 0,
+    width: BASE_WIDTH,
+    height: BASE_HEIGHT,
   });
-  
+
   const isWarning = timeRemaining <= 30 && timeRemaining > 10;
   const isDanger = timeRemaining <= 10;
 
+  // Calculate scale factor based on current size vs base size
+  const scaleFactor = useMemo(() => {
+    const widthScale = panelState.width / BASE_WIDTH;
+    const heightScale = panelState.height / BASE_HEIGHT;
+    return Math.min(widthScale, heightScale);
+  }, [panelState.width, panelState.height]);
+
+  // Center the panel on mount
   useLayoutEffect(() => {
     if (initializedRef.current) return;
-    const el = boundsRef.current;
-    if (!el) return;
+    const bounds = boundsRef.current;
+    if (!bounds) return;
 
-    const { width: pw, height: ph } = el.getBoundingClientRect();
-    if (!pw || !ph) return;
+    const { width: bw, height: bh } = bounds.getBoundingClientRect();
+    if (!bw || !bh) return;
 
-    const nextWidth = Math.min(560, Math.max(320, Math.round(pw * 0.42)));
-    const nextHeight = Math.min(380, Math.max(240, Math.round(ph * 0.34)));
-    const nextX = Math.round(pw / 2 - nextWidth / 2);
-    const nextY = Math.round(ph / 2 - nextHeight / 2 + 50);
+    const initialWidth = Math.min(BASE_WIDTH, bw * 0.85);
+    const initialHeight = Math.min(BASE_HEIGHT, bh * 0.6);
+    const x = Math.round((bw - initialWidth) / 2);
+    const y = Math.round((bh - initialHeight) / 2);
 
-    setRect({ x: nextX, y: nextY, width: nextWidth, height: nextHeight });
+    setPanelState({ x, y, width: initialWidth, height: initialHeight });
     initializedRef.current = true;
   }, []);
 
-  const stopResizePropagation = useCallback((e: unknown) => {
-    const anyEvent = e as { stopPropagation?: () => void; preventDefault?: () => void };
-    anyEvent?.stopPropagation?.();
-    anyEvent?.preventDefault?.();
-  }, []);
+  // Resize handle styles - invisible but easy to grab
+  const resizeHandleStyles = useMemo(() => {
+    const edgeSize = 12;
+    const cornerSize = 20;
 
-  const resizeHandleComponent = useMemo(() => {
-    const Handle = (
-      <span
-        onMouseDownCapture={(e) => e.stopPropagation()}
-        onTouchStartCapture={(e) => e.stopPropagation()}
-        onPointerDownCapture={(e) => e.stopPropagation()}
-        className="pointer-events-auto"
-        aria-hidden="true"
-      />
-    );
     return {
-      top: Handle,
-      right: Handle,
-      bottom: Handle,
-      left: Handle,
-      topLeft: Handle,
-      topRight: Handle,
-      bottomLeft: Handle,
-      bottomRight: Handle,
+      top: { top: 0, left: cornerSize, right: cornerSize, height: edgeSize, cursor: 'ns-resize' },
+      bottom: { bottom: 0, left: cornerSize, right: cornerSize, height: edgeSize, cursor: 'ns-resize' },
+      left: { left: 0, top: cornerSize, bottom: cornerSize, width: edgeSize, cursor: 'ew-resize' },
+      right: { right: 0, top: cornerSize, bottom: cornerSize, width: edgeSize, cursor: 'ew-resize' },
+      topLeft: { top: 0, left: 0, width: cornerSize, height: cornerSize, cursor: 'nwse-resize' },
+      topRight: { top: 0, right: 0, width: cornerSize, height: cornerSize, cursor: 'nesw-resize' },
+      bottomLeft: { bottom: 0, left: 0, width: cornerSize, height: cornerSize, cursor: 'nesw-resize' },
+      bottomRight: { bottom: 0, right: 0, width: cornerSize, height: cornerSize, cursor: 'nwse-resize' },
     };
   }, []);
 
-  const resizeHandleStyles = useMemo(() => {
-    // Make edges/corners easy to grab without adding visible UI.
-    const edge = 10;
-    const corner = 18;
-    const halfCorner = corner / 2;
-    const halfEdge = edge / 2;
-
-    return {
-      top: { top: -halfEdge, left: halfCorner, right: halfCorner, height: edge },
-      bottom: { bottom: -halfEdge, left: halfCorner, right: halfCorner, height: edge },
-      left: { left: -halfEdge, top: halfCorner, bottom: halfCorner, width: edge },
-      right: { right: -halfEdge, top: halfCorner, bottom: halfCorner, width: edge },
-      topLeft: { top: -halfCorner, left: -halfCorner, width: corner, height: corner },
-      topRight: { top: -halfCorner, right: -halfCorner, width: corner, height: corner },
-      bottomLeft: { bottom: -halfCorner, left: -halfCorner, width: corner, height: corner },
-      bottomRight: { bottom: -halfCorner, right: -halfCorner, width: corner, height: corner },
-    } as const;
+  const handleDragStop = useCallback((_e: unknown, data: { x: number; y: number }) => {
+    setPanelState(prev => ({ ...prev, x: data.x, y: data.y }));
   }, []);
 
-  const resizeHandleClasses = useMemo(() => {
-    return {
-      top: "cursor-ns-resize",
-      bottom: "cursor-ns-resize",
-      left: "cursor-ew-resize",
-      right: "cursor-ew-resize",
-      topLeft: "cursor-nwse-resize",
-      bottomRight: "cursor-nwse-resize",
-      topRight: "cursor-nesw-resize",
-      bottomLeft: "cursor-nesw-resize",
-    } as const;
-  }, []);
+  const handleResizeStop = useCallback(
+    (_e: unknown, _dir: unknown, ref: HTMLElement, _delta: unknown, position: { x: number; y: number }) => {
+      setPanelState({
+        x: position.x,
+        y: position.y,
+        width: ref.offsetWidth,
+        height: ref.offsetHeight,
+      });
+    },
+    []
+  );
+
+  // Dynamic font sizes based on scale
+  const timerFontSize = Math.max(32, Math.round(48 * scaleFactor));
+  const buttonSize = Math.max(32, Math.round(40 * scaleFactor));
+  const iconSize = Math.max(16, Math.round(20 * scaleFactor));
 
   return (
     <div className="absolute inset-0 z-10 pointer-events-none">
       <div ref={boundsRef} className="relative h-full w-full">
         <Rnd
           bounds="parent"
-          position={{ x: rect.x, y: rect.y }}
-          size={{ width: rect.width, height: rect.height }}
-          minWidth={280}
-          minHeight={220}
-          maxWidth="90%"
-          maxHeight="85%"
-          dragHandleClassName="timer-panel-drag-area"
-          cancel="button, [data-no-drag]"
-          disableDragging={isResizing}
-          enableResizing
-          resizeHandleWrapperStyle={{ zIndex: 60 }}
-          resizeHandleComponent={resizeHandleComponent}
+          position={{ x: panelState.x, y: panelState.y }}
+          size={{ width: panelState.width, height: panelState.height }}
+          minWidth={MIN_WIDTH}
+          minHeight={MIN_HEIGHT}
+          maxWidth="95%"
+          maxHeight="90%"
+          dragHandleClassName="timer-drag-handle"
+          enableResizing={{
+            top: true,
+            right: true,
+            bottom: true,
+            left: true,
+            topRight: true,
+            bottomRight: true,
+            bottomLeft: true,
+            topLeft: true,
+          }}
           resizeHandleStyles={resizeHandleStyles}
-          resizeHandleClasses={resizeHandleClasses}
-          onDragStop={(_, data) => {
-            setRect((prev) => ({ ...prev, x: data.x, y: data.y }));
-          }}
-          onResizeStart={(e) => {
-            stopResizePropagation(e);
-            setIsResizing(true);
-          }}
-          onResize={(e) => {
-            stopResizePropagation(e);
-          }}
-          onResizeStop={(e, _dir, ref, _delta, position) => {
-            stopResizePropagation(e);
-            setIsResizing(false);
-            setRect({
-              x: position.x,
-              y: position.y,
-              width: ref.offsetWidth,
-              height: ref.offsetHeight,
-            });
-          }}
+          onDragStop={handleDragStop}
+          onResizeStop={handleResizeStop}
           className="pointer-events-auto"
+          style={{ zIndex: 50 }}
         >
-          <div className="h-full w-full flex flex-col items-center justify-center">
-            {/* Drag Handle Indicator - ONLY this element triggers drag */}
-            <div
-              className="timer-panel-drag-area absolute -top-8 left-1/2 -translate-x-1/2 flex items-center gap-1 px-3 py-1.5 rounded-full bg-muted/80 hover:bg-muted cursor-grab active:cursor-grabbing transition-colors"
-              title="Arraste para mover"
-            >
-              <Move className="w-4 h-4 text-foreground" />
-              <span className="text-xs text-foreground font-medium">Arraste</span>
-            </div>
-
-        {/* Match Ended Overlay */}
-        {matchEnded && (
-          <div className="absolute -top-20 md:-top-24 left-1/2 -translate-x-1/2">
-            <motion.div 
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className={cn(
-                "text-xl md:text-3xl font-bold uppercase px-6 py-4 rounded-xl whitespace-nowrap",
-                "border-4 scoreboard-shadow",
-                matchWinner === 'chung' ? "bg-chung border-chung-dark text-white" : 
-                matchWinner === 'hong' ? "bg-hong border-hong-dark text-white" : 
-                "bg-muted border-muted-foreground text-foreground"
-              )}
-            >
-              {matchWinner ? (
-                <div className="flex flex-col items-center">
-                  <span className="text-sm md:text-lg opacity-80">VENCEDOR DA LUTA</span>
-                  <span>{winnerName || (matchWinner === 'chung' ? 'CHUNG' : 'HONG')}</span>
-                </div>
-              ) : 'EMPATE'}
-            </motion.div>
-          </div>
-        )}
-
-            {/* Timer Container - NOT draggable, only buttons work here */}
-            <div
-              className={cn(
-                "bg-background/95 rounded-2xl p-3 md:p-5 scoreboard-shadow",
-                "border-4 relative",
-                isSubtractMode ? "border-gamjeom animate-pulse" : "border-muted",
-                "flex flex-col items-center",
-                "select-none",
-                matchEnded && "opacity-50"
-              )}
-            >
-
-          {/* Round Indicator - Always visible */}
-          <RoundIndicator
-            totalRounds={totalRounds}
-            currentRound={currentRound}
-            roundResults={roundResults}
-            isResting={isResting}
-          />
-
-          {/* Rest Indicator */}
-          {isResting && (
-            <div className="text-primary font-bold text-base md:text-xl uppercase tracking-wider mb-1 animate-pulse">
-              DESCANSO
-            </div>
-          )}
-
-          {/* Main Timer with Play/Pause next to it */}
-          <div className="flex items-center gap-3">
-            <div
-              className={cn(
-                "font-digital text-3xl md:text-5xl lg:text-6xl font-bold leading-none",
-                isDanger ? "text-timer-danger text-glow-danger" :
-                isWarning ? "text-timer-warning text-glow-warning" :
-                "text-timer text-glow-timer"
-              )}
-            >
-              {formatTime(timeRemaining)}
-            </div>
-            
-            {/* Play/Pause Button - Always visible next to timer */}
-            <button
-              onClick={onToggleTimer}
-              disabled={matchEnded}
-              className={cn(
-                "p-2 md:p-3 rounded-full",
-                "bg-primary hover:bg-primary/80 text-primary-foreground",
-                "transition-all duration-200 active:scale-95",
-                "disabled:opacity-50 disabled:cursor-not-allowed"
-              )}
-            >
-              {isRunning ? <Pause className="w-5 h-5 md:w-6 md:h-6" /> : <Play className="w-5 h-5 md:w-6 md:h-6" />}
-            </button>
-          </div>
-
-          {/* Compact Toggle Button */}
-          <button
-            onClick={() => setIsCompact(!isCompact)}
+          {/* Main Black Panel - This is what gets resized */}
+          <div
             className={cn(
-              "mt-2 p-1 rounded-full",
-              "bg-muted/50 hover:bg-muted text-foreground/60 hover:text-foreground",
-              "transition-all duration-200"
+              "w-full h-full flex flex-col",
+              "bg-background/95 rounded-2xl scoreboard-shadow",
+              "border-4 relative overflow-hidden",
+              isSubtractMode ? "border-gamjeom animate-pulse" : "border-muted"
             )}
           >
-            {isCompact ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-          </button>
+            {/* Drag Handle Bar at Top */}
+            <div
+              className={cn(
+                "timer-drag-handle",
+                "flex items-center justify-center gap-2 py-2",
+                "bg-muted/50 hover:bg-muted/80 transition-colors",
+                "cursor-grab active:cursor-grabbing",
+                "border-b border-border/50",
+                "select-none shrink-0"
+              )}
+            >
+              <GripHorizontal className="w-5 h-5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                Arraste aqui
+              </span>
+              <GripHorizontal className="w-5 h-5 text-muted-foreground" />
+            </div>
 
-          {/* Collapsible Content */}
-          <AnimatePresence>
-            {!isCompact && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
-              >
-                {/* Time Adjustment Buttons */}
-                <div className="flex items-center gap-2 mt-2">
-                  <button
-                    onClick={() => onAdjustTime(-1)}
-                    className={cn(
-                      "px-2 py-1 text-xs md:text-sm rounded",
-                      "bg-muted hover:bg-muted-foreground/20 text-foreground",
-                      "transition-all duration-200 active:scale-95"
-                    )}
-                  >
-                    -1s
-                  </button>
-                  <button
-                    onClick={() => onAdjustTime(1)}
-                    className={cn(
-                      "px-2 py-1 text-xs md:text-sm rounded",
-                      "bg-muted hover:bg-muted-foreground/20 text-foreground",
-                      "transition-all duration-200 active:scale-95"
-                    )}
-                  >
-                    +1s
-                  </button>
-                </div>
-
-                {/* Control Buttons */}
-                <div className="flex items-center gap-2 md:gap-3 mt-3 md:mt-4">
-                  <button
-                    onClick={onResetRound}
-                    className={cn(
-                      "p-2 md:p-3 rounded-full",
-                      "bg-muted hover:bg-muted-foreground/20 text-foreground",
-                      "transition-all duration-200 active:scale-95"
-                    )}
-                  >
-                    <RotateCcw className="w-4 h-4 md:w-5 md:h-5" />
-                  </button>
-
-                  {/* Revert to Previous Round */}
-                  {canRevertRound && onRevertToPreviousRound && (
-                    <button
-                      onClick={onRevertToPreviousRound}
-                      className={cn(
-                        "p-2 md:p-3 rounded-full",
-                        "bg-orange-500/80 hover:bg-orange-500 text-white",
-                        "transition-all duration-200 active:scale-95"
-                      )}
-                      title="Retornar ao Round Anterior"
-                    >
-                      <Undo2 className="w-4 h-4 md:w-5 md:h-5" />
-                    </button>
+            {/* Content Area - Uses flex to stay centered */}
+            <div className="flex-1 flex flex-col items-center justify-center p-3 gap-2 min-h-0">
+              {/* Match Ended Overlay */}
+              {matchEnded && (
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className={cn(
+                    "absolute top-12 left-1/2 -translate-x-1/2 z-20",
+                    "text-lg font-bold uppercase px-4 py-2 rounded-xl whitespace-nowrap",
+                    "border-2 scoreboard-shadow",
+                    matchWinner === 'chung' ? "bg-chung border-chung-dark text-chung-foreground" :
+                    matchWinner === 'hong' ? "bg-hong border-hong-dark text-hong-foreground" :
+                    "bg-muted border-muted-foreground text-foreground"
                   )}
+                  style={{ fontSize: Math.max(12, 14 * scaleFactor) }}
+                >
+                  {matchWinner ? (
+                    <div className="flex flex-col items-center">
+                      <span className="text-xs opacity-80">VENCEDOR</span>
+                      <span>{winnerName || (matchWinner === 'chung' ? 'CHUNG' : 'HONG')}</span>
+                    </div>
+                  ) : 'EMPATE'}
+                </motion.div>
+              )}
 
-                  {/* Subtract Mode Toggle */}
-                  <button
-                    onClick={onToggleSubtractMode}
-                    className={cn(
-                      "p-2 md:p-3 rounded-full",
-                      "transition-all duration-200 active:scale-95",
-                      isSubtractMode 
-                        ? "bg-gamjeom text-black ring-2 ring-gamjeom ring-offset-2 ring-offset-background"
-                        : "bg-muted hover:bg-muted-foreground/20 text-foreground"
-                    )}
-                    title="Modo Correção (Subtrair)"
-                  >
-                    <Minus className="w-4 h-4 md:w-5 md:h-5" />
-                  </button>
+              {/* Round Indicator */}
+              <div style={{ transform: `scale(${Math.max(0.7, scaleFactor)})` }}>
+                <RoundIndicator
+                  totalRounds={totalRounds}
+                  currentRound={currentRound}
+                  roundResults={roundResults}
+                  isResting={isResting}
+                />
+              </div>
 
-                  <button
-                    onClick={onOpenSettings}
-                    className={cn(
-                      "p-2 md:p-3 rounded-full",
-                      "bg-muted hover:bg-muted-foreground/20 text-foreground",
-                      "transition-all duration-200 active:scale-95"
-                    )}
-                  >
-                    <Settings className="w-4 h-4 md:w-5 md:h-5" />
-                  </button>
-
-                  <button
-                    onClick={onOpenGamepad}
-                    className={cn(
-                      "p-2 md:p-3 rounded-full relative",
-                      "bg-muted hover:bg-muted-foreground/20 text-foreground",
-                      "transition-all duration-200 active:scale-95"
-                    )}
-                  >
-                    <Gamepad2 className="w-4 h-4 md:w-5 md:h-5" />
-                    {gamepadConnected && (
-                      <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-timer rounded-full" />
-                    )}
-                  </button>
+              {/* Rest Indicator */}
+              {isResting && (
+                <div
+                  className="text-primary font-bold uppercase tracking-wider animate-pulse"
+                  style={{ fontSize: Math.max(14, 18 * scaleFactor) }}
+                >
+                  DESCANSO
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              )}
+
+              {/* Timer Display with Play/Pause */}
+              <div className="flex items-center gap-3">
+                <div
+                  className={cn(
+                    "font-digital font-bold leading-none",
+                    isDanger ? "text-timer-danger text-glow-danger" :
+                    isWarning ? "text-timer-warning text-glow-warning" :
+                    "text-timer text-glow-timer",
+                    matchEnded && "opacity-50"
+                  )}
+                  style={{ fontSize: timerFontSize }}
+                >
+                  {formatTime(timeRemaining)}
+                </div>
+
+                <button
+                  onClick={onToggleTimer}
+                  disabled={matchEnded}
+                  className={cn(
+                    "rounded-full flex items-center justify-center",
+                    "bg-primary hover:bg-primary/80 text-primary-foreground",
+                    "transition-all duration-200 active:scale-95",
+                    "disabled:opacity-50 disabled:cursor-not-allowed"
+                  )}
+                  style={{ width: buttonSize, height: buttonSize }}
+                >
+                  {isRunning ? (
+                    <Pause style={{ width: iconSize, height: iconSize }} />
+                  ) : (
+                    <Play style={{ width: iconSize, height: iconSize }} />
+                  )}
+                </button>
+              </div>
+
+              {/* Compact Toggle */}
+              <button
+                onClick={() => setIsCompact(!isCompact)}
+                className={cn(
+                  "p-1 rounded-full",
+                  "bg-muted/50 hover:bg-muted text-foreground/60 hover:text-foreground",
+                  "transition-all duration-200"
+                )}
+              >
+                {isCompact ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+              </button>
+
+              {/* Collapsible Controls */}
+              <AnimatePresence>
+                {!isCompact && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex flex-col items-center gap-2 overflow-hidden"
+                  >
+                    {/* Time Adjustment */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => onAdjustTime(-1)}
+                        className={cn(
+                          "px-2 py-1 text-xs rounded",
+                          "bg-muted hover:bg-muted-foreground/20 text-foreground",
+                          "transition-all duration-200 active:scale-95"
+                        )}
+                      >
+                        -1s
+                      </button>
+                      <button
+                        onClick={() => onAdjustTime(1)}
+                        className={cn(
+                          "px-2 py-1 text-xs rounded",
+                          "bg-muted hover:bg-muted-foreground/20 text-foreground",
+                          "transition-all duration-200 active:scale-95"
+                        )}
+                      >
+                        +1s
+                      </button>
+                    </div>
+
+                    {/* Control Buttons */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={onResetRound}
+                        className={cn(
+                          "p-2 rounded-full",
+                          "bg-muted hover:bg-muted-foreground/20 text-foreground",
+                          "transition-all duration-200 active:scale-95"
+                        )}
+                      >
+                        <RotateCcw style={{ width: iconSize * 0.8, height: iconSize * 0.8 }} />
+                      </button>
+
+                      {canRevertRound && onRevertToPreviousRound && (
+                        <button
+                          onClick={onRevertToPreviousRound}
+                          className={cn(
+                            "p-2 rounded-full",
+                            "bg-destructive/80 hover:bg-destructive text-destructive-foreground",
+                            "transition-all duration-200 active:scale-95"
+                          )}
+                          title="Retornar ao Round Anterior"
+                        >
+                          <Undo2 style={{ width: iconSize * 0.8, height: iconSize * 0.8 }} />
+                        </button>
+                      )}
+
+                      <button
+                        onClick={onToggleSubtractMode}
+                        className={cn(
+                          "p-2 rounded-full",
+                          "transition-all duration-200 active:scale-95",
+                          isSubtractMode
+                            ? "bg-gamjeom text-black ring-2 ring-gamjeom ring-offset-2 ring-offset-background"
+                            : "bg-muted hover:bg-muted-foreground/20 text-foreground"
+                        )}
+                        title="Modo Correção (Subtrair)"
+                      >
+                        <Minus style={{ width: iconSize * 0.8, height: iconSize * 0.8 }} />
+                      </button>
+
+                      <button
+                        onClick={onOpenSettings}
+                        className={cn(
+                          "p-2 rounded-full",
+                          "bg-muted hover:bg-muted-foreground/20 text-foreground",
+                          "transition-all duration-200 active:scale-95"
+                        )}
+                      >
+                        <Settings style={{ width: iconSize * 0.8, height: iconSize * 0.8 }} />
+                      </button>
+
+                      <button
+                        onClick={onOpenGamepad}
+                        className={cn(
+                          "p-2 rounded-full relative",
+                          "bg-muted hover:bg-muted-foreground/20 text-foreground",
+                          "transition-all duration-200 active:scale-95"
+                        )}
+                      >
+                        <Gamepad2 style={{ width: iconSize * 0.8, height: iconSize * 0.8 }} />
+                        {gamepadConnected && (
+                          <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-timer rounded-full" />
+                        )}
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </Rnd>
