@@ -191,14 +191,14 @@ export const TimerPanel = ({
           }}
           className="pointer-events-auto"
         >
-          <div className="h-full w-full flex flex-col items-center">
-            {/* Drag Handle Indicator */}
+          <div className="h-full w-full flex flex-col items-center justify-center">
+            {/* Drag Handle Indicator - ONLY this element triggers drag */}
             <div
-              className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-40 flex items-center gap-1"
+              className="timer-panel-drag-area absolute -top-8 left-1/2 -translate-x-1/2 flex items-center gap-1 px-3 py-1.5 rounded-full bg-muted/80 hover:bg-muted cursor-grab active:cursor-grabbing transition-colors"
               title="Arraste para mover"
             >
               <Move className="w-4 h-4 text-foreground" />
-              <span className="text-xs text-foreground">Arraste</span>
+              <span className="text-xs text-foreground font-medium">Arraste</span>
             </div>
 
         {/* Match Ended Overlay */}
@@ -225,16 +225,14 @@ export const TimerPanel = ({
           </div>
         )}
 
-            {/* Timer Container */}
+            {/* Timer Container - NOT draggable, only buttons work here */}
             <div
               className={cn(
-                "timer-panel-drag-area",
                 "bg-background/95 rounded-2xl p-3 md:p-5 scoreboard-shadow",
                 "border-4 relative",
                 isSubtractMode ? "border-gamjeom animate-pulse" : "border-muted",
                 "flex flex-col items-center",
                 "select-none",
-                "cursor-grab active:cursor-grabbing",
                 matchEnded && "opacity-50"
               )}
             >
