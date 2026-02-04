@@ -1,7 +1,8 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useLayoutEffect, useMemo, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { Play, Pause, RotateCcw, Settings, Gamepad2, Move, Minus, ChevronUp, ChevronDown, Undo2, Maximize2 } from "lucide-react";
-import { motion, AnimatePresence, useDragControls } from "framer-motion";
+import { Play, Pause, RotateCcw, Settings, Gamepad2, Move, Minus, ChevronUp, ChevronDown, Undo2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Rnd } from "react-rnd";
 import { RoundIndicator } from "./RoundIndicator";
 
 interface TimerPanelProps {
@@ -54,136 +55,151 @@ export const TimerPanel = ({
   onRevertToPreviousRound,
 }: TimerPanelProps) => {
   const [isCompact, setIsCompact] = useState(false);
-  const [scale, setScale] = useState(100);
-  const dragControls = useDragControls();
+  const boundsRef = useRef<HTMLDivElement | null>(null);
+  const initializedRef = useRef(false);
+  const [isResizing, setIsResizing] = useState(false);
 
-  // Pinch to scale (touch only)
-  const activePointersRef = useRef(new Map<number, { x: number; y: number }>());
-  const pinchStartRef = useRef<{ distance: number; scale: number } | null>(null);
+  const [rect, setRect] = useState<{ x: number; y: number; width: number; height: number }>(() => {
+    // Initial guess; we recenter with real viewport bounds on mount.
+    const isSmall = typeof window !== "undefined" && window.innerWidth < 640;
+    return {
+      x: 0,
+      y: 0,
+      width: isSmall ? 340 : 520,
+      height: isSmall ? 260 : 320,
+    };
+  });
   
   const isWarning = timeRemaining <= 30 && timeRemaining > 10;
   const isDanger = timeRemaining <= 10;
 
-  const scaleValue = scale / 100;
+  useLayoutEffect(() => {
+    if (initializedRef.current) return;
+    const el = boundsRef.current;
+    if (!el) return;
 
-  const clampScale = useCallback((value: number) => Math.min(150, Math.max(50, value)), []);
+    const { width: pw, height: ph } = el.getBoundingClientRect();
+    if (!pw || !ph) return;
 
-  const handleStartDrag = useCallback((e: React.PointerEvent) => {
-    // Keep drag on desktop mouse, avoid stealing touch gestures (pinch)
-    if (e.pointerType !== "mouse") return;
-    const target = e.target as HTMLElement;
-    if (target.closest("button,[data-no-drag]")) return;
-    dragControls.start(e);
-  }, [dragControls]);
+    const nextWidth = Math.min(560, Math.max(320, Math.round(pw * 0.42)));
+    const nextHeight = Math.min(380, Math.max(240, Math.round(ph * 0.34)));
+    const nextX = Math.round(pw / 2 - nextWidth / 2);
+    const nextY = Math.round(ph / 2 - nextHeight / 2 + 50);
 
-  const handlePinchPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.pointerType !== "touch") return;
-    const target = e.target as HTMLElement;
-    if (target.closest("button,[data-no-pinch]")) return;
-
-    const el = e.currentTarget;
-    try {
-      el.setPointerCapture(e.pointerId);
-    } catch {
-      // ignore
-    }
-    activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
-    if (activePointersRef.current.size === 2) {
-      const [a, b] = Array.from(activePointersRef.current.values());
-      const distance = Math.hypot(a.x - b.x, a.y - b.y) || 1;
-      pinchStartRef.current = { distance, scale };
-    }
-  }, [scale]);
-
-  const handlePinchPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.pointerType !== "touch") return;
-    if (!activePointersRef.current.has(e.pointerId)) return;
-    activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
-    if (activePointersRef.current.size !== 2 || !pinchStartRef.current) return;
-
-    const [a, b] = Array.from(activePointersRef.current.values());
-    const distance = Math.hypot(a.x - b.x, a.y - b.y) || 1;
-    const ratio = distance / pinchStartRef.current.distance;
-    const newScale = clampScale(Math.round(pinchStartRef.current.scale * ratio));
-    setScale(newScale);
-  }, [clampScale]);
-
-  const handlePinchPointerEnd = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (activePointersRef.current.has(e.pointerId)) {
-      activePointersRef.current.delete(e.pointerId);
-    }
-    if (activePointersRef.current.size < 2) {
-      pinchStartRef.current = null;
-    }
-
-    try {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    } catch {
-      // ignore
-    }
+    setRect({ x: nextX, y: nextY, width: nextWidth, height: nextHeight });
+    initializedRef.current = true;
   }, []);
 
-  const handleResizePointerDown = useCallback((e: React.PointerEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const target = e.currentTarget as HTMLElement;
-    target.setPointerCapture(e.pointerId);
-    
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const startScale = scale;
+  const stopResizePropagation = useCallback((e: unknown) => {
+    const anyEvent = e as { stopPropagation?: () => void; preventDefault?: () => void };
+    anyEvent?.stopPropagation?.();
+    anyEvent?.preventDefault?.();
+  }, []);
 
-    const handlePointerMove = (moveEvent: PointerEvent) => {
-      const deltaX = moveEvent.clientX - startX;
-      const deltaY = moveEvent.clientY - startY;
-      // Diagonal movement (right-down = increase, left-up = decrease)
-      const delta = (deltaX + deltaY) / 2;
-      
-      const newScale = Math.min(150, Math.max(50, startScale + delta / 2));
-      setScale(Math.round(newScale));
+  const resizeHandleComponent = useMemo(() => {
+    const Handle = (
+      <span
+        onMouseDownCapture={(e) => e.stopPropagation()}
+        onTouchStartCapture={(e) => e.stopPropagation()}
+        onPointerDownCapture={(e) => e.stopPropagation()}
+        className="pointer-events-auto"
+        aria-hidden="true"
+      />
+    );
+    return {
+      top: Handle,
+      right: Handle,
+      bottom: Handle,
+      left: Handle,
+      topLeft: Handle,
+      topRight: Handle,
+      bottomLeft: Handle,
+      bottomRight: Handle,
     };
+  }, []);
 
-    const handlePointerUp = () => {
-      target.releasePointerCapture(e.pointerId);
-      document.removeEventListener('pointermove', handlePointerMove);
-      document.removeEventListener('pointerup', handlePointerUp);
-    };
+  const resizeHandleStyles = useMemo(() => {
+    // Make edges/corners easy to grab without adding visible UI.
+    const edge = 10;
+    const corner = 18;
+    const halfCorner = corner / 2;
+    const halfEdge = edge / 2;
 
-    document.addEventListener('pointermove', handlePointerMove);
-    document.addEventListener('pointerup', handlePointerUp);
-    document.addEventListener('pointercancel', handlePointerUp);
-  }, [scale]);
+    return {
+      top: { top: -halfEdge, left: halfCorner, right: halfCorner, height: edge },
+      bottom: { bottom: -halfEdge, left: halfCorner, right: halfCorner, height: edge },
+      left: { left: -halfEdge, top: halfCorner, bottom: halfCorner, width: edge },
+      right: { right: -halfEdge, top: halfCorner, bottom: halfCorner, width: edge },
+      topLeft: { top: -halfCorner, left: -halfCorner, width: corner, height: corner },
+      topRight: { top: -halfCorner, right: -halfCorner, width: corner, height: corner },
+      bottomLeft: { bottom: -halfCorner, left: -halfCorner, width: corner, height: corner },
+      bottomRight: { bottom: -halfCorner, right: -halfCorner, width: corner, height: corner },
+    } as const;
+  }, []);
+
+  const resizeHandleClasses = useMemo(() => {
+    return {
+      top: "cursor-ns-resize",
+      bottom: "cursor-ns-resize",
+      left: "cursor-ew-resize",
+      right: "cursor-ew-resize",
+      topLeft: "cursor-nwse-resize",
+      bottomRight: "cursor-nwse-resize",
+      topRight: "cursor-nesw-resize",
+      bottomLeft: "cursor-nesw-resize",
+    } as const;
+  }, []);
 
   return (
-    <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
-      <motion.div 
-        drag
-        dragControls={dragControls}
-        dragListener={false}
-        dragMomentum={false}
-        dragConstraints={{ left: -400, right: 400, top: -300, bottom: 300 }}
-        onPointerDown={handleStartDrag}
-        className="pointer-events-auto flex flex-col items-center cursor-grab active:cursor-grabbing mt-16 md:mt-20"
-        whileDrag={{ scale: 1.02, cursor: 'grabbing' }}
-        style={{ transform: `scale(${scaleValue})` }}
-      >
-        {/* Drag Handle Indicator */}
-        <div
-          onPointerDown={(e) => {
-            // Allow dragging on touch only via this handle
-            e.stopPropagation();
-            dragControls.start(e);
+    <div className="absolute inset-0 z-10 pointer-events-none">
+      <div ref={boundsRef} className="relative h-full w-full">
+        <Rnd
+          bounds="parent"
+          position={{ x: rect.x, y: rect.y }}
+          size={{ width: rect.width, height: rect.height }}
+          minWidth={280}
+          minHeight={220}
+          maxWidth="90%"
+          maxHeight="85%"
+          dragHandleClassName="timer-panel-drag-area"
+          cancel="button, [data-no-drag]"
+          disableDragging={isResizing}
+          enableResizing
+          resizeHandleWrapperStyle={{ zIndex: 60 }}
+          resizeHandleComponent={resizeHandleComponent}
+          resizeHandleStyles={resizeHandleStyles}
+          resizeHandleClasses={resizeHandleClasses}
+          onDragStop={(_, data) => {
+            setRect((prev) => ({ ...prev, x: data.x, y: data.y }));
           }}
-          className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-40 flex items-center gap-1 cursor-grab active:cursor-grabbing"
-          title="Arraste para mover"
-          data-no-pinch
+          onResizeStart={(e) => {
+            stopResizePropagation(e);
+            setIsResizing(true);
+          }}
+          onResize={(e) => {
+            stopResizePropagation(e);
+          }}
+          onResizeStop={(e, _dir, ref, _delta, position) => {
+            stopResizePropagation(e);
+            setIsResizing(false);
+            setRect({
+              x: position.x,
+              y: position.y,
+              width: ref.offsetWidth,
+              height: ref.offsetHeight,
+            });
+          }}
+          className="pointer-events-auto"
         >
-          <Move className="w-4 h-4 text-foreground" />
-          <span className="text-xs text-foreground">Arraste</span>
-        </div>
+          <div className="h-full w-full flex flex-col items-center">
+            {/* Drag Handle Indicator */}
+            <div
+              className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-40 flex items-center gap-1"
+              title="Arraste para mover"
+            >
+              <Move className="w-4 h-4 text-foreground" />
+              <span className="text-xs text-foreground">Arraste</span>
+            </div>
 
         {/* Match Ended Overlay */}
         {matchEnded && (
@@ -209,40 +225,19 @@ export const TimerPanel = ({
           </div>
         )}
 
-        {/* Timer Container */}
-        <div
-          onPointerDown={handlePinchPointerDown}
-          onPointerMove={handlePinchPointerMove}
-          onPointerUp={handlePinchPointerEnd}
-          onPointerCancel={handlePinchPointerEnd}
-          className={cn(
-          "bg-background/95 rounded-2xl p-3 md:p-5 scoreboard-shadow",
-          "border-4 relative",
-          isSubtractMode ? "border-gamjeom animate-pulse" : "border-muted",
-          "flex flex-col items-center",
-          "touch-none",
-          "select-none",
-          matchEnded && "opacity-50"
-        )}>
-          {/* Resize Handle - Top Right Corner - Uses onPointerDown to bypass framer drag */}
-          <div
-            onPointerDown={handleResizePointerDown}
-            className={cn(
-              "absolute -top-3 -right-3 w-8 h-8",
-              "bg-primary hover:bg-primary/80 rounded-full",
-              "cursor-nwse-resize",
-              "flex items-center justify-center",
-              "transition-colors duration-200",
-              "shadow-lg border-2 border-background",
-              "z-50"
-            )}
-            style={{ touchAction: 'none' }}
-            title={`Escala: ${scale}% - Arraste para redimensionar`}
-            data-no-drag
-            data-no-pinch
-          >
-            <Maximize2 className="w-4 h-4 text-primary-foreground" />
-          </div>
+            {/* Timer Container */}
+            <div
+              className={cn(
+                "timer-panel-drag-area",
+                "bg-background/95 rounded-2xl p-3 md:p-5 scoreboard-shadow",
+                "border-4 relative",
+                isSubtractMode ? "border-gamjeom animate-pulse" : "border-muted",
+                "flex flex-col items-center",
+                "select-none",
+                "cursor-grab active:cursor-grabbing",
+                matchEnded && "opacity-50"
+              )}
+            >
 
           {/* Round Indicator - Always visible */}
           <RoundIndicator
@@ -404,8 +399,10 @@ export const TimerPanel = ({
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
-      </motion.div>
+            </div>
+          </div>
+        </Rnd>
+      </div>
     </div>
   );
 };
