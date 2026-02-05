@@ -221,35 +221,6 @@ export const TimerPanel = ({
                 </motion.div>
               )}
 
-              {/* Top Controls Row - Compact at edge */}
-              <div 
-                className="absolute top-2 right-2 flex items-center gap-1"
-                style={{ transform: `scale(${Math.max(0.7, scaleFactor * 0.85)})`, transformOrigin: 'top right' }}
-              >
-                <button
-                  onClick={onOpenSettings}
-                  className={cn(
-                    "p-1.5 rounded-full",
-                    "bg-muted/50 hover:bg-muted text-foreground/60 hover:text-foreground",
-                    "transition-all duration-200 active:scale-95"
-                  )}
-                >
-                  <Settings className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={onOpenGamepad}
-                  className={cn(
-                    "p-1.5 rounded-full relative",
-                    "bg-muted/50 hover:bg-muted text-foreground/60 hover:text-foreground",
-                    "transition-all duration-200 active:scale-95"
-                  )}
-                >
-                  <Gamepad2 className="w-4 h-4" />
-                  {gamepadConnected && (
-                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-timer rounded-full" />
-                  )}
-                </button>
-              </div>
 
               {/* Round Indicator - Minimal */}
               <div 
@@ -322,7 +293,7 @@ export const TimerPanel = ({
                   {isCompact ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
                 </button>
 
-                {/* Collapsible Controls */}
+                {/* Collapsible Controls - All config and control buttons */}
                 <AnimatePresence>
                   {!isCompact && (
                     <motion.div
@@ -330,13 +301,13 @@ export const TimerPanel = ({
                       animate={{ opacity: 1, width: 'auto' }}
                       exit={{ opacity: 0, width: 0 }}
                       transition={{ duration: 0.15 }}
-                      className="flex items-center gap-1 overflow-hidden"
+                      className="flex items-center gap-1.5 overflow-hidden"
                     >
-                      {/* Time Adjustment - compact */}
+                      {/* Time Adjustment */}
                       <button
                         onClick={() => onAdjustTime(-1)}
                         className={cn(
-                          "px-1.5 py-0.5 text-[10px] rounded",
+                          "px-2 py-1 text-xs rounded",
                           "bg-muted/50 hover:bg-muted text-foreground/70",
                           "transition-all duration-200 active:scale-95"
                         )}
@@ -346,7 +317,7 @@ export const TimerPanel = ({
                       <button
                         onClick={() => onAdjustTime(1)}
                         className={cn(
-                          "px-1.5 py-0.5 text-[10px] rounded",
+                          "px-2 py-1 text-xs rounded",
                           "bg-muted/50 hover:bg-muted text-foreground/70",
                           "transition-all duration-200 active:scale-95"
                         )}
@@ -354,38 +325,39 @@ export const TimerPanel = ({
                         +1s
                       </button>
 
-                      <div className="w-px h-4 bg-border/30 mx-0.5" />
+                      <div className="w-px h-5 bg-border/30 mx-1" />
 
-                      {/* Control Buttons - small */}
+                      {/* Control Buttons */}
                       <button
                         onClick={onResetRound}
                         className={cn(
-                          "p-1 rounded-full",
+                          "p-1.5 rounded-full",
                           "bg-muted/50 hover:bg-muted text-foreground/60 hover:text-foreground",
                           "transition-all duration-200 active:scale-95"
                         )}
+                        title="Reiniciar Round"
                       >
-                        <RotateCcw className="w-3 h-3" />
+                        <RotateCcw className="w-4 h-4" />
                       </button>
 
                       {canRevertRound && onRevertToPreviousRound && (
                         <button
                           onClick={onRevertToPreviousRound}
                           className={cn(
-                            "p-1 rounded-full",
+                            "p-1.5 rounded-full",
                             "bg-destructive/60 hover:bg-destructive text-destructive-foreground",
                             "transition-all duration-200 active:scale-95"
                           )}
                           title="Retornar ao Round Anterior"
                         >
-                          <Undo2 className="w-3 h-3" />
+                          <Undo2 className="w-4 h-4" />
                         </button>
                       )}
 
                       <button
                         onClick={onToggleSubtractMode}
                         className={cn(
-                          "p-1 rounded-full",
+                          "p-1.5 rounded-full",
                           "transition-all duration-200 active:scale-95",
                           isSubtractMode
                             ? "bg-gamjeom text-black ring-1 ring-gamjeom"
@@ -393,7 +365,36 @@ export const TimerPanel = ({
                         )}
                         title="Modo Correção (Subtrair)"
                       >
-                        <Minus className="w-3 h-3" />
+                        <Minus className="w-4 h-4" />
+                      </button>
+
+                      <div className="w-px h-5 bg-border/30 mx-1" />
+
+                      {/* Settings & Gamepad */}
+                      <button
+                        onClick={onOpenSettings}
+                        className={cn(
+                          "p-1.5 rounded-full",
+                          "bg-muted/50 hover:bg-muted text-foreground/60 hover:text-foreground",
+                          "transition-all duration-200 active:scale-95"
+                        )}
+                        title="Configurações"
+                      >
+                        <Settings className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={onOpenGamepad}
+                        className={cn(
+                          "p-1.5 rounded-full relative",
+                          "bg-muted/50 hover:bg-muted text-foreground/60 hover:text-foreground",
+                          "transition-all duration-200 active:scale-95"
+                        )}
+                        title="Controle"
+                      >
+                        <Gamepad2 className="w-4 h-4" />
+                        {gamepadConnected && (
+                          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-timer rounded-full" />
+                        )}
                       </button>
                     </motion.div>
                   )}

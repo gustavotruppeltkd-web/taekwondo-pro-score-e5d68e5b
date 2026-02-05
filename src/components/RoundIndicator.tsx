@@ -14,7 +14,7 @@ export const RoundIndicator = ({
   isResting,
 }: RoundIndicatorProps) => {
   return (
-    <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
+    <div className="flex items-center gap-3 md:gap-4 mb-2 md:mb-3">
       {Array.from({ length: totalRounds }, (_, i) => {
         const roundNumber = i + 1;
         const result = roundResults[i];
@@ -24,8 +24,8 @@ export const RoundIndicator = ({
           <div
             key={i}
             className={cn(
-              "w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center",
-              "font-bold text-sm md:text-base transition-all duration-300",
+              "w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center",
+              "font-bold text-base md:text-lg transition-all duration-300",
               // Winner colors - fully filled circle
               result === 'chung' && "bg-chung text-white shadow-lg shadow-chung/50",
               result === 'hong' && "bg-hong text-white shadow-lg shadow-hong/50",
