@@ -34,10 +34,10 @@ const formatTime = (seconds: number): string => {
 };
 
 // Base dimensions for scaling calculations
-const BASE_WIDTH = 400;
-const BASE_HEIGHT = 280;
-const MIN_WIDTH = 320;
-const MIN_HEIGHT = 240;
+const BASE_WIDTH = 380;
+const BASE_HEIGHT = 320;
+const MIN_WIDTH = 280;
+const MIN_HEIGHT = 220;
 
 export const TimerPanel = ({
   timeRemaining,
@@ -133,10 +133,10 @@ export const TimerPanel = ({
     []
   );
 
-  // Dynamic font sizes based on scale
-  const timerFontSize = Math.max(32, Math.round(48 * scaleFactor));
-  const buttonSize = Math.max(32, Math.round(40 * scaleFactor));
-  const iconSize = Math.max(16, Math.round(20 * scaleFactor));
+  // Dynamic font sizes - timer dominates 70-80% of panel
+  const timerFontSize = Math.max(48, Math.round(panelState.height * 0.35));
+  const buttonSize = Math.max(28, Math.round(32 * scaleFactor));
+  const iconSize = Math.max(14, Math.round(16 * scaleFactor));
 
   return (
     <div className="absolute inset-0 z-10 pointer-events-none">
@@ -175,33 +175,35 @@ export const TimerPanel = ({
               isSubtractMode ? "border-gamjeom animate-pulse" : "border-muted"
             )}
           >
-            {/* Drag Handle Bar at Top */}
+            {/* Minimal Drag Handle - 6 dots icon at top center */}
             <div
               className={cn(
                 "timer-drag-handle",
-                "flex items-center justify-center gap-2 py-2",
-                "bg-muted/50 hover:bg-muted/80 transition-colors",
+                "absolute top-0 left-1/2 -translate-x-1/2 z-30",
+                "px-3 py-1.5",
                 "cursor-grab active:cursor-grabbing",
-                "border-b border-border/50",
-                "select-none shrink-0"
+                "select-none",
+                "opacity-30 hover:opacity-80 transition-opacity"
               )}
             >
-              <GripHorizontal className="w-5 h-5 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                Arraste aqui
-              </span>
-              <GripHorizontal className="w-5 h-5 text-muted-foreground" />
+              <div className="flex gap-0.5">
+                <div className="grid grid-cols-3 gap-0.5">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="w-1 h-1 rounded-full bg-muted-foreground" />
+                  ))}
+                </div>
+              </div>
             </div>
 
-            {/* Content Area - Uses flex to stay centered */}
-            <div className="flex-1 flex flex-col items-center justify-center p-3 gap-2 min-h-0">
+            {/* Content Area - Timer dominates */}
+            <div className="flex-1 flex flex-col items-center justify-center px-2 py-1 min-h-0">
               {/* Match Ended Overlay */}
               {matchEnded && (
                 <motion.div
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   className={cn(
-                    "absolute top-12 left-1/2 -translate-x-1/2 z-20",
+                    "absolute top-6 left-1/2 -translate-x-1/2 z-20",
                     "text-lg font-bold uppercase px-4 py-2 rounded-xl whitespace-nowrap",
                     "border-2 scoreboard-shadow",
                     matchWinner === 'chung' ? "bg-chung border-chung-dark text-chung-foreground" :
@@ -219,8 +221,41 @@ export const TimerPanel = ({
                 </motion.div>
               )}
 
-              {/* Round Indicator */}
-              <div style={{ transform: `scale(${Math.max(0.7, scaleFactor)})` }}>
+              {/* Top Controls Row - Compact at edge */}
+              <div 
+                className="absolute top-2 right-2 flex items-center gap-1"
+                style={{ transform: `scale(${Math.max(0.7, scaleFactor * 0.85)})`, transformOrigin: 'top right' }}
+              >
+                <button
+                  onClick={onOpenSettings}
+                  className={cn(
+                    "p-1.5 rounded-full",
+                    "bg-muted/50 hover:bg-muted text-foreground/60 hover:text-foreground",
+                    "transition-all duration-200 active:scale-95"
+                  )}
+                >
+                  <Settings className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={onOpenGamepad}
+                  className={cn(
+                    "p-1.5 rounded-full relative",
+                    "bg-muted/50 hover:bg-muted text-foreground/60 hover:text-foreground",
+                    "transition-all duration-200 active:scale-95"
+                  )}
+                >
+                  <Gamepad2 className="w-4 h-4" />
+                  {gamepadConnected && (
+                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-timer rounded-full" />
+                  )}
+                </button>
+              </div>
+
+              {/* Round Indicator - Minimal */}
+              <div 
+                className="mb-1"
+                style={{ transform: `scale(${Math.max(0.6, scaleFactor * 0.8)})` }}
+              >
                 <RoundIndicator
                   totalRounds={totalRounds}
                   currentRound={currentRound}
@@ -233,17 +268,17 @@ export const TimerPanel = ({
               {isResting && (
                 <div
                   className="text-primary font-bold uppercase tracking-wider animate-pulse"
-                  style={{ fontSize: Math.max(14, 18 * scaleFactor) }}
+                  style={{ fontSize: Math.max(12, 14 * scaleFactor) }}
                 >
                   DESCANSO
                 </div>
               )}
 
-              {/* Timer Display with Play/Pause */}
-              <div className="flex items-center gap-3">
+              {/* Timer Display - DOMINANT */}
+              <div className="flex items-center justify-center gap-2 flex-1">
                 <div
                   className={cn(
-                    "font-digital font-bold leading-none",
+                    "font-digital font-bold leading-none tracking-tight",
                     isDanger ? "text-timer-danger text-glow-danger" :
                     isWarning ? "text-timer-warning text-glow-warning" :
                     "text-timer text-glow-timer",
@@ -258,7 +293,7 @@ export const TimerPanel = ({
                   onClick={onToggleTimer}
                   disabled={matchEnded}
                   className={cn(
-                    "rounded-full flex items-center justify-center",
+                    "rounded-full flex items-center justify-center shrink-0",
                     "bg-primary hover:bg-primary/80 text-primary-foreground",
                     "transition-all duration-200 active:scale-95",
                     "disabled:opacity-50 disabled:cursor-not-allowed"
@@ -273,35 +308,36 @@ export const TimerPanel = ({
                 </button>
               </div>
 
-              {/* Compact Toggle */}
-              <button
-                onClick={() => setIsCompact(!isCompact)}
-                className={cn(
-                  "p-1 rounded-full",
-                  "bg-muted/50 hover:bg-muted text-foreground/60 hover:text-foreground",
-                  "transition-all duration-200"
-                )}
-              >
-                {isCompact ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-              </button>
+              {/* Bottom Controls - Compact row */}
+              <div className="flex items-center justify-center gap-1 mt-auto pb-1">
+                {/* Compact Toggle */}
+                <button
+                  onClick={() => setIsCompact(!isCompact)}
+                  className={cn(
+                    "p-1 rounded-full",
+                    "bg-muted/30 hover:bg-muted/60 text-foreground/40 hover:text-foreground/80",
+                    "transition-all duration-200"
+                  )}
+                >
+                  {isCompact ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
+                </button>
 
-              {/* Collapsible Controls */}
-              <AnimatePresence>
-                {!isCompact && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="flex flex-col items-center gap-2 overflow-hidden"
-                  >
-                    {/* Time Adjustment */}
-                    <div className="flex items-center gap-2">
+                {/* Collapsible Controls */}
+                <AnimatePresence>
+                  {!isCompact && (
+                    <motion.div
+                      initial={{ opacity: 0, width: 0 }}
+                      animate={{ opacity: 1, width: 'auto' }}
+                      exit={{ opacity: 0, width: 0 }}
+                      transition={{ duration: 0.15 }}
+                      className="flex items-center gap-1 overflow-hidden"
+                    >
+                      {/* Time Adjustment - compact */}
                       <button
                         onClick={() => onAdjustTime(-1)}
                         className={cn(
-                          "px-2 py-1 text-xs rounded",
-                          "bg-muted hover:bg-muted-foreground/20 text-foreground",
+                          "px-1.5 py-0.5 text-[10px] rounded",
+                          "bg-muted/50 hover:bg-muted text-foreground/70",
                           "transition-all duration-200 active:scale-95"
                         )}
                       >
@@ -310,84 +346,59 @@ export const TimerPanel = ({
                       <button
                         onClick={() => onAdjustTime(1)}
                         className={cn(
-                          "px-2 py-1 text-xs rounded",
-                          "bg-muted hover:bg-muted-foreground/20 text-foreground",
+                          "px-1.5 py-0.5 text-[10px] rounded",
+                          "bg-muted/50 hover:bg-muted text-foreground/70",
                           "transition-all duration-200 active:scale-95"
                         )}
                       >
                         +1s
                       </button>
-                    </div>
 
-                    {/* Control Buttons */}
-                    <div className="flex items-center gap-2">
+                      <div className="w-px h-4 bg-border/30 mx-0.5" />
+
+                      {/* Control Buttons - small */}
                       <button
                         onClick={onResetRound}
                         className={cn(
-                          "p-2 rounded-full",
-                          "bg-muted hover:bg-muted-foreground/20 text-foreground",
+                          "p-1 rounded-full",
+                          "bg-muted/50 hover:bg-muted text-foreground/60 hover:text-foreground",
                           "transition-all duration-200 active:scale-95"
                         )}
                       >
-                        <RotateCcw style={{ width: iconSize * 0.8, height: iconSize * 0.8 }} />
+                        <RotateCcw className="w-3 h-3" />
                       </button>
 
                       {canRevertRound && onRevertToPreviousRound && (
                         <button
                           onClick={onRevertToPreviousRound}
                           className={cn(
-                            "p-2 rounded-full",
-                            "bg-destructive/80 hover:bg-destructive text-destructive-foreground",
+                            "p-1 rounded-full",
+                            "bg-destructive/60 hover:bg-destructive text-destructive-foreground",
                             "transition-all duration-200 active:scale-95"
                           )}
                           title="Retornar ao Round Anterior"
                         >
-                          <Undo2 style={{ width: iconSize * 0.8, height: iconSize * 0.8 }} />
+                          <Undo2 className="w-3 h-3" />
                         </button>
                       )}
 
                       <button
                         onClick={onToggleSubtractMode}
                         className={cn(
-                          "p-2 rounded-full",
+                          "p-1 rounded-full",
                           "transition-all duration-200 active:scale-95",
                           isSubtractMode
-                            ? "bg-gamjeom text-black ring-2 ring-gamjeom ring-offset-2 ring-offset-background"
-                            : "bg-muted hover:bg-muted-foreground/20 text-foreground"
+                            ? "bg-gamjeom text-black ring-1 ring-gamjeom"
+                            : "bg-muted/50 hover:bg-muted text-foreground/60 hover:text-foreground"
                         )}
                         title="Modo Correção (Subtrair)"
                       >
-                        <Minus style={{ width: iconSize * 0.8, height: iconSize * 0.8 }} />
+                        <Minus className="w-3 h-3" />
                       </button>
-
-                      <button
-                        onClick={onOpenSettings}
-                        className={cn(
-                          "p-2 rounded-full",
-                          "bg-muted hover:bg-muted-foreground/20 text-foreground",
-                          "transition-all duration-200 active:scale-95"
-                        )}
-                      >
-                        <Settings style={{ width: iconSize * 0.8, height: iconSize * 0.8 }} />
-                      </button>
-
-                      <button
-                        onClick={onOpenGamepad}
-                        className={cn(
-                          "p-2 rounded-full relative",
-                          "bg-muted hover:bg-muted-foreground/20 text-foreground",
-                          "transition-all duration-200 active:scale-95"
-                        )}
-                      >
-                        <Gamepad2 style={{ width: iconSize * 0.8, height: iconSize * 0.8 }} />
-                        {gamepadConnected && (
-                          <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-timer rounded-full" />
-                        )}
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           </div>
         </Rnd>
