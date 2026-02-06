@@ -6,7 +6,6 @@ import { GamepadDialog } from "./GamepadDialog";
 import { RefereeDecisionModal } from "./RefereeDecisionModal";
 import { RoundWinnerBanner } from "./RoundWinnerBanner";
 import { AudioUnlockButton } from "./AudioUnlockButton";
-import { LandscapeOverlay } from "./LandscapeOverlay";
 import { useScoreboard } from "@/hooks/useScoreboard";
 import { useGamepad, GamepadMapping, defaultMapping } from "@/hooks/useGamepad";
 
@@ -68,71 +67,62 @@ export const Scoreboard = () => {
   };
 
   return (
-    <div className="h-screen w-screen flex flex-row overflow-hidden bg-background">
-      {/* Landscape Orientation Overlay */}
-      <LandscapeOverlay />
-
+    <div className="h-screen w-screen flex overflow-hidden bg-background">
       {/* Audio Unlock Button for iOS */}
       <AudioUnlockButton />
 
-      {/* Chung (Blue) Side - 30% */}
-      <div className="w-[30%] h-full flex-shrink-0">
-        <FighterPanel
-          side="chung"
-          name={settings.chungName}
-          score={state.chung.score}
-          gamjeom={state.chung.gamjeom}
-          roundsWon={state.chung.roundsWon}
-          roundsToWin={roundsToWin}
-          isSubtractMode={state.isSubtractMode}
-          pointHistory={state.chungHistory}
-          onAddPoints={(points) => addPoints('chung', points)}
-          onAddGamjeom={() => addGamjeom('chung')}
-          disabled={state.matchEnded || state.isResting}
-        />
-      </div>
+      {/* Chung (Blue) Side */}
+      <FighterPanel
+        side="chung"
+        name={settings.chungName}
+        score={state.chung.score}
+        gamjeom={state.chung.gamjeom}
+        roundsWon={state.chung.roundsWon}
+        roundsToWin={roundsToWin}
+        isSubtractMode={state.isSubtractMode}
+        pointHistory={state.chungHistory}
+        onAddPoints={(points) => addPoints('chung', points)}
+        onAddGamjeom={() => addGamjeom('chung')}
+        disabled={state.matchEnded || state.isResting}
+      />
 
-      {/* Center Timer Panel - 40% */}
-      <div className="w-[40%] h-full flex-shrink-0">
-        <TimerPanel
-          timeRemaining={state.timeRemaining}
-          currentRound={state.currentRound}
-          totalRounds={settings.totalRounds}
-          isRunning={state.isRunning}
-          isResting={state.isResting}
-          matchEnded={state.matchEnded}
-          matchWinner={state.matchWinner}
-          gamepadConnected={gamepadConnected}
-          isSubtractMode={state.isSubtractMode}
-          roundResults={state.roundResults}
-          winnerName={state.matchWinner === 'chung' ? settings.chungName : settings.hongName}
-          canRevertRound={state.previousRoundSnapshot !== null}
-          onToggleTimer={toggleTimer}
-          onResetRound={resetRound}
-          onOpenSettings={() => setSettingsOpen(true)}
-          onOpenGamepad={() => setGamepadOpen(true)}
-          onToggleSubtractMode={toggleSubtractMode}
-          onAdjustTime={adjustTime}
-          onRevertToPreviousRound={revertToPreviousRound}
-        />
-      </div>
+      {/* Hong (Red) Side */}
+      <FighterPanel
+        side="hong"
+        name={settings.hongName}
+        score={state.hong.score}
+        gamjeom={state.hong.gamjeom}
+        roundsWon={state.hong.roundsWon}
+        roundsToWin={roundsToWin}
+        isSubtractMode={state.isSubtractMode}
+        pointHistory={state.hongHistory}
+        onAddPoints={(points) => addPoints('hong', points)}
+        onAddGamjeom={() => addGamjeom('hong')}
+        disabled={state.matchEnded || state.isResting}
+      />
 
-      {/* Hong (Red) Side - 30% */}
-      <div className="w-[30%] h-full flex-shrink-0">
-        <FighterPanel
-          side="hong"
-          name={settings.hongName}
-          score={state.hong.score}
-          gamjeom={state.hong.gamjeom}
-          roundsWon={state.hong.roundsWon}
-          roundsToWin={roundsToWin}
-          isSubtractMode={state.isSubtractMode}
-          pointHistory={state.hongHistory}
-          onAddPoints={(points) => addPoints('hong', points)}
-          onAddGamjeom={() => addGamjeom('hong')}
-          disabled={state.matchEnded || state.isResting}
-        />
-      </div>
+      {/* Center Timer Panel */}
+      <TimerPanel
+        timeRemaining={state.timeRemaining}
+        currentRound={state.currentRound}
+        totalRounds={settings.totalRounds}
+        isRunning={state.isRunning}
+        isResting={state.isResting}
+        matchEnded={state.matchEnded}
+        matchWinner={state.matchWinner}
+        gamepadConnected={gamepadConnected}
+        isSubtractMode={state.isSubtractMode}
+        roundResults={state.roundResults}
+        winnerName={state.matchWinner === 'chung' ? settings.chungName : settings.hongName}
+        canRevertRound={state.previousRoundSnapshot !== null}
+        onToggleTimer={toggleTimer}
+        onResetRound={resetRound}
+        onOpenSettings={() => setSettingsOpen(true)}
+        onOpenGamepad={() => setGamepadOpen(true)}
+        onToggleSubtractMode={toggleSubtractMode}
+        onAdjustTime={adjustTime}
+        onRevertToPreviousRound={revertToPreviousRound}
+      />
 
       {/* Round Winner Banner */}
       <RoundWinnerBanner
