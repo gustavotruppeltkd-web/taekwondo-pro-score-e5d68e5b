@@ -68,8 +68,8 @@ export const TimerPanel = ({
   const [panelState, setPanelState] = useState({
     x: 0,
     y: 0,
-    width: BASE_WIDTH,
-    height: BASE_HEIGHT,
+    width: MIN_WIDTH,
+    height: MIN_HEIGHT,
   });
 
   const isWarning = timeRemaining <= 30 && timeRemaining > 10;
@@ -91,8 +91,8 @@ export const TimerPanel = ({
     const { width: bw, height: bh } = bounds.getBoundingClientRect();
     if (!bw || !bh) return;
 
-    const initialWidth = Math.min(BASE_WIDTH, bw * 0.85);
-    const initialHeight = Math.min(BASE_HEIGHT, bh * 0.6);
+    const initialWidth = Math.min(MIN_WIDTH, bw * 0.85);
+    const initialHeight = Math.min(MIN_HEIGHT, bh * 0.6);
     const x = Math.round((bw - initialWidth) / 2);
     const y = Math.round((bh - initialHeight) / 2);
 
@@ -224,7 +224,7 @@ export const TimerPanel = ({
 
               {/* Round Indicator */}
               <div 
-                className="mb-0"
+                className="mt-4 mb-0"
                 style={{ transform: `scale(${Math.max(0.7, scaleFactor * 0.9)})` }}
               >
                 <RoundIndicator
