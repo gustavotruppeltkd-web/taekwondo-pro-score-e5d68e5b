@@ -24,7 +24,7 @@ export const RoundIndicator = ({
           <div
             key={i}
             className={cn(
-              "w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center",
+              "w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center",
               "font-bold text-base md:text-lg transition-all duration-300",
               // Winner colors - fully filled circle
               result === 'chung' && "bg-chung text-white shadow-lg shadow-chung/50",

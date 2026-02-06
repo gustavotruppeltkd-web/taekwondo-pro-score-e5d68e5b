@@ -1,6 +1,6 @@
 import { useState, useCallback, useLayoutEffect, useMemo, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { Play, Pause, RotateCcw, Settings, Gamepad2, GripHorizontal, Minus, ChevronUp, ChevronDown, Undo2 } from "lucide-react";
+import { RotateCcw, Settings, Gamepad2, Minus, ChevronUp, ChevronDown, Undo2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Rnd } from "react-rnd";
 import { RoundIndicator } from "./RoundIndicator";
@@ -222,10 +222,10 @@ export const TimerPanel = ({
               )}
 
 
-              {/* Round Indicator - Minimal */}
+              {/* Round Indicator */}
               <div 
-                className="mb-1"
-                style={{ transform: `scale(${Math.max(0.6, scaleFactor * 0.8)})` }}
+                className="mb-0"
+                style={{ transform: `scale(${Math.max(0.7, scaleFactor * 0.9)})` }}
               >
                 <RoundIndicator
                   totalRounds={totalRounds}
@@ -245,39 +245,34 @@ export const TimerPanel = ({
                 </div>
               )}
 
-              {/* Timer Display - DOMINANT */}
-              <div className="flex items-center justify-center gap-2 flex-1">
+              {/* Timer Display - DOMINANT & CLICKABLE */}
+              <button
+                onClick={onToggleTimer}
+                disabled={matchEnded}
+                className={cn(
+                  "flex-1 flex items-center justify-center w-full",
+                  "cursor-pointer select-none",
+                  "transition-all duration-300 active:scale-95",
+                  "disabled:cursor-not-allowed",
+                  "rounded-xl hover:bg-muted/20",
+                  "min-h-0"
+                )}
+              >
                 <div
                   className={cn(
                     "font-digital font-bold leading-none tracking-tight",
+                    "transition-all duration-500",
                     isDanger ? "text-timer-danger text-glow-danger" :
                     isWarning ? "text-timer-warning text-glow-warning" :
                     "text-timer text-glow-timer",
-                    matchEnded && "opacity-50"
+                    matchEnded && "opacity-50",
+                    !isRunning && !matchEnded && "opacity-60 animate-pulse"
                   )}
                   style={{ fontSize: timerFontSize }}
                 >
                   {formatTime(timeRemaining)}
                 </div>
-
-                <button
-                  onClick={onToggleTimer}
-                  disabled={matchEnded}
-                  className={cn(
-                    "rounded-full flex items-center justify-center shrink-0",
-                    "bg-primary hover:bg-primary/80 text-primary-foreground",
-                    "transition-all duration-200 active:scale-95",
-                    "disabled:opacity-50 disabled:cursor-not-allowed"
-                  )}
-                  style={{ width: buttonSize, height: buttonSize }}
-                >
-                  {isRunning ? (
-                    <Pause style={{ width: iconSize, height: iconSize }} />
-                  ) : (
-                    <Play style={{ width: iconSize, height: iconSize }} />
-                  )}
-                </button>
-              </div>
+              </button>
 
               {/* Bottom Controls - Compact row */}
               <div className="flex items-center justify-center gap-1 mt-auto pb-1">
