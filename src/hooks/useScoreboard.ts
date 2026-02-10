@@ -402,6 +402,35 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
     return newState;
   }, [settings.maxScore, settings.maxGamjeom, settings.totalRounds, settings.restTime, endRound]);
 
+  // Double last point
+  const doubleLastPoint = useCallback((fighter: 'chung' | 'hong') => {
+    if (state.matchEnded || state.isResting) return;
+    
+    setState(prev => {
+      const historyKey = fighter === 'chung' ? 'chungHistory' : 'hongHistory';
+      const history = prev[historyKey];
+      
+      const lastScoreEntry = [...history].reverse().find(e => e.type === 'score' && e.value > 0);
+      if (!lastScoreEntry) return prev;
+      
+      const doubleValue = lastScoreEntry.value;
+      const newScore = Math.max(0, prev[fighter].score + doubleValue);
+      const newHistory = [
+        ...history,
+        { value: doubleValue, type: 'score' as const, timestamp: Date.now() }
+      ];
+      
+      playScoreBeep();
+      
+      const newState = {
+        ...prev,
+        [fighter]: { ...prev[fighter], score: newScore },
+        [historyKey]: newHistory,
+      };
+      return checkImmediateVictory(newState);
+    });
+  }, [checkImmediateVictory, state.matchEnded, state.isResting]);
+
   // Scoring functions with subtract mode support
   const addPoints = useCallback((fighter: 'chung' | 'hong', points: number) => {
     if (state.matchEnded || state.isResting) return;
@@ -613,6 +642,7 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
     settings,
     addPoints,
     addGamjeom,
+    doubleLastPoint,
     toggleTimer,
     resetRound,
     resetMatch,

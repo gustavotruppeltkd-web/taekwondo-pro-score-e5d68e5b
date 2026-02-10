@@ -19,6 +19,7 @@ export const Scoreboard = () => {
     settings,
     addPoints,
     addGamjeom,
+    doubleLastPoint,
     toggleTimer,
     resetRound,
     resetMatch,
@@ -76,6 +77,7 @@ export const Scoreboard = () => {
         side="chung"
         name={settings.chungName}
         score={state.chung.score}
+        opponentScore={state.hong.score}
         gamjeom={state.chung.gamjeom}
         roundsWon={state.chung.roundsWon}
         roundsToWin={roundsToWin}
@@ -83,6 +85,7 @@ export const Scoreboard = () => {
         pointHistory={state.chungHistory}
         onAddPoints={(points) => addPoints('chung', points)}
         onAddGamjeom={() => addGamjeom('chung')}
+        onDoubleLastPoint={() => doubleLastPoint('chung')}
         disabled={state.matchEnded || state.isResting}
       />
 
@@ -91,6 +94,7 @@ export const Scoreboard = () => {
         side="hong"
         name={settings.hongName}
         score={state.hong.score}
+        opponentScore={state.chung.score}
         gamjeom={state.hong.gamjeom}
         roundsWon={state.hong.roundsWon}
         roundsToWin={roundsToWin}
@@ -98,6 +102,7 @@ export const Scoreboard = () => {
         pointHistory={state.hongHistory}
         onAddPoints={(points) => addPoints('hong', points)}
         onAddGamjeom={() => addGamjeom('hong')}
+        onDoubleLastPoint={() => doubleLastPoint('hong')}
         disabled={state.matchEnded || state.isResting}
       />
 
