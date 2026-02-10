@@ -1,11 +1,12 @@
 import { cn } from "@/lib/utils";
-import { Minus } from "lucide-react";
+import { Minus, CopyPlus } from "lucide-react";
 import { PointHistorySidebar, PointEntry } from "./PointHistorySidebar";
 
 interface FighterPanelProps {
   side: 'chung' | 'hong';
   name: string;
   score: number;
+  opponentScore: number;
   gamjeom: number;
   roundsWon: number;
   roundsToWin: number;
@@ -13,6 +14,7 @@ interface FighterPanelProps {
   pointHistory: PointEntry[];
   onAddPoints: (points: number) => void;
   onAddGamjeom: () => void;
+  onDoubleLastPoint: () => void;
   animateScore?: boolean;
   disabled?: boolean;
 }
@@ -21,6 +23,7 @@ export const FighterPanel = ({
   side,
   name,
   score,
+  opponentScore,
   gamjeom,
   roundsWon,
   roundsToWin,
@@ -28,10 +31,12 @@ export const FighterPanel = ({
   pointHistory,
   onAddPoints,
   onAddGamjeom,
+  onDoubleLastPoint,
   animateScore = false,
   disabled = false,
 }: FighterPanelProps) => {
   const isChung = side === 'chung';
+  const isWinning = score > opponentScore;
 
   return (
     <div
@@ -80,12 +85,15 @@ export const FighterPanel = ({
       )}
 
       {/* Main Score */}
-      <div className="flex flex-col items-center justify-center flex-1">
+      <div className={cn(
+        "flex flex-col items-center justify-center flex-1",
+        isChung ? "-translate-x-4 md:-translate-x-8 lg:-translate-x-12" : "translate-x-4 md:translate-x-8 lg:translate-x-12"
+      )}>
         <div
           className={cn(
             "font-digital text-[8rem] md:text-[14rem] lg:text-[18rem] font-bold leading-none",
-            "text-white",
-            isChung ? "text-glow-chung" : "text-glow-hong",
+            isWinning ? "text-glow-winning" : (isChung ? "text-glow-chung" : "text-glow-hong"),
+            isWinning ? "text-winning" : "text-white",
             animateScore && "animate-score-pop"
           )}
         >
@@ -125,6 +133,18 @@ export const FighterPanel = ({
               {isSubtractMode ? `-${points}` : `+${points}`}
             </button>
           ))}
+          <button
+            onClick={onDoubleLastPoint}
+            disabled={disabled || isSubtractMode}
+            className={cn(
+              "px-4 py-2 md:px-6 md:py-3 rounded-lg font-bold text-lg md:text-xl",
+              "transition-all duration-200 active:scale-95",
+              "disabled:opacity-50 disabled:cursor-not-allowed",
+              "bg-white/20 hover:bg-white/30 text-white border-2 border-white/30"
+            )}
+          >
+            <CopyPlus className="w-5 h-5 md:w-6 md:h-6" />
+          </button>
           <button
             onClick={onAddGamjeom}
             disabled={disabled}
