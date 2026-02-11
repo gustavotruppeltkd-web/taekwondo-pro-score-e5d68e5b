@@ -4,6 +4,7 @@ export interface PointEntry {
   value: number;
   type: 'score' | 'gamjeom';
   timestamp: number;
+  isDouble?: boolean;
 }
 
 interface PointHistorySidebarProps {
