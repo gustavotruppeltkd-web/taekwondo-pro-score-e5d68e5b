@@ -233,12 +233,79 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
       hongHistory: [...currentState.hongHistory],
     };
     
-    // Check for tie
+    // Check for tie - apply tiebreaker criteria
     if (chung.score === hong.score) {
+      // Tiebreaker order: 1) double of 3, 2) double of 2, 3) 3 points, 4) 2 points
+      const chungHistory = currentState.chungHistory;
+      const hongHistory = currentState.hongHistory;
+      
+      const countEntries = (history: typeof chungHistory, value: number, isDouble: boolean) =>
+        history.filter(e => e.type === 'score' && e.value === value && (isDouble ? e.isDouble === true : !e.isDouble)).length;
+      
+      const tiebreakers = [
+        { value: 3, isDouble: true },   // Dobro de 3
+        { value: 2, isDouble: true },   // Dobro de 2
+        { value: 3, isDouble: false },  // 3 pontos
+        { value: 2, isDouble: false },  // 2 pontos
+      ];
+      
+      let tieWinner: 'chung' | 'hong' | null = null;
+      for (const tb of tiebreakers) {
+        const chungCount = countEntries(chungHistory, tb.value, tb.isDouble);
+        const hongCount = countEntries(hongHistory, tb.value, tb.isDouble);
+        if (chungCount > hongCount) { tieWinner = 'chung'; break; }
+        if (hongCount > chungCount) { tieWinner = 'hong'; break; }
+      }
+      
+      if (!tieWinner) {
+        // No tiebreaker resolved - show decision modal
+        return {
+          ...currentState,
+          isRunning: false,
+          showDecisionModal: true,
+          previousRoundSnapshot: snapshot,
+        };
+      }
+      
+      // Tiebreaker resolved automatically
+      const newChungTie = { ...chung };
+      const newHongTie = { ...hong };
+      const newResultsTie = [...currentState.roundResults];
+      
+      if (tieWinner === 'chung') {
+        newChungTie.roundsWon += 1;
+      } else {
+        newHongTie.roundsWon += 1;
+      }
+      newResultsTie[currentRound - 1] = tieWinner;
+      
+      const roundsToWin = Math.ceil(settings.totalRounds / 2);
+      
+      if (newChungTie.roundsWon >= roundsToWin || newHongTie.roundsWon >= roundsToWin) {
+        return {
+          ...currentState,
+          chung: newChungTie,
+          hong: newHongTie,
+          roundResults: newResultsTie,
+          isRunning: false,
+          matchEnded: true,
+          roundWinner: tieWinner,
+          matchWinner: tieWinner,
+          showRoundWinner: true,
+          previousRoundSnapshot: snapshot,
+        };
+      }
+      
       return {
         ...currentState,
-        isRunning: false,
-        showDecisionModal: true,
+        chung: newChungTie,
+        hong: newHongTie,
+        roundResults: newResultsTie,
+        isRunning: true,
+        isResting: true,
+        timeRemaining: settings.restTime,
+        roundWinner: tieWinner,
+        showRoundWinner: true,
         previousRoundSnapshot: snapshot,
       };
     }
@@ -417,7 +484,7 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
       const newScore = Math.max(0, prev[fighter].score + doubleValue);
       const newHistory = [
         ...history,
-        { value: doubleValue, type: 'score' as const, timestamp: Date.now() }
+        { value: doubleValue, type: 'score' as const, timestamp: Date.now(), isDouble: true }
       ];
       
       playScoreBeep();
