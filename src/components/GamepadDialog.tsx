@@ -19,10 +19,12 @@ const mappingLabels: Record<keyof GamepadMapping, { label: string; side: 'chung'
   chungPlus2: { label: '+2 Pontos', side: 'chung' },
   chungPlus3: { label: '+3 Pontos', side: 'chung' },
   chungGamjeom: { label: 'Gam-jeom', side: 'chung' },
+  chungDouble: { label: 'Dobro', side: 'chung' },
   hongPlus1: { label: '+1 Ponto', side: 'hong' },
   hongPlus2: { label: '+2 Pontos', side: 'hong' },
   hongPlus3: { label: '+3 Pontos', side: 'hong' },
   hongGamjeom: { label: 'Gam-jeom', side: 'hong' },
+  hongDouble: { label: 'Dobro', side: 'hong' },
   startPause: { label: 'Iniciar/Pausar', side: 'general' },
   resetRound: { label: 'Resetar Round', side: 'general' },
   subtractMode: { label: 'Modo Correção (-)', side: 'general' },
@@ -152,7 +154,7 @@ export const GamepadDialog = ({
               Atleta Azul (Chung)
             </h3>
             <div className="grid gap-2">
-              {(['chungPlus1', 'chungPlus2', 'chungPlus3', 'chungGamjeom'] as const).map(renderMappingButton)}
+              {(['chungPlus1', 'chungPlus2', 'chungPlus3', 'chungGamjeom', 'chungDouble'] as const).map(renderMappingButton)}
             </div>
           </div>
 
@@ -163,7 +165,7 @@ export const GamepadDialog = ({
               Atleta Vermelho (Hong)
             </h3>
             <div className="grid gap-2">
-              {(['hongPlus1', 'hongPlus2', 'hongPlus3', 'hongGamjeom'] as const).map(renderMappingButton)}
+              {(['hongPlus1', 'hongPlus2', 'hongPlus3', 'hongGamjeom', 'hongDouble'] as const).map(renderMappingButton)}
             </div>
           </div>
 

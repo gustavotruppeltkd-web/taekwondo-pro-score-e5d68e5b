@@ -5,10 +5,12 @@ export interface GamepadMapping {
   chungPlus2: number | null;
   chungPlus3: number | null;
   chungGamjeom: number | null;
+  chungDouble: number | null;
   hongPlus1: number | null;
   hongPlus2: number | null;
   hongPlus3: number | null;
   hongGamjeom: number | null;
+  hongDouble: number | null;
   startPause: number | null;
   resetRound: number | null;
   subtractMode: number | null;
@@ -39,21 +41,21 @@ export const defaultMapping: GamepadMapping = {
   hongPlus2: 5,       // R1
   hongPlus3: 7,       // R2
   hongGamjeom: 3,     // Triangle
+  hongDouble: 1,      // Circle
   
   // Chung (Blue) controls
   chungPlus1: 13,     // D-Pad Down
   chungPlus2: 4,      // L1
   chungPlus3: 6,      // L2
   chungGamjeom: 12,   // D-Pad Up
+  chungDouble: 14,    // D-Pad Left
   
   // General controls
   startPause: 11,     // R3 (Right analog click)
   resetRound: 10,     // L3 (Left analog click)
+  subtractMode: 9,    // Options / Start
   decisionHong: 15,   // D-Pad Right (Red wins)
-  decisionChung: 14,  // D-Pad Left (Blue wins)
-  
-  // Subtract mode - not mapped by default, toggle via UI
-  subtractMode: null,
+  decisionChung: null, // Not mapped (D-Pad Left now used for chungDouble)
 };
 
 interface GamepadActions {
@@ -61,10 +63,12 @@ interface GamepadActions {
   onChungPlus2?: () => void;
   onChungPlus3?: () => void;
   onChungGamjeom?: () => void;
+  onChungDouble?: () => void;
   onHongPlus1?: () => void;
   onHongPlus2?: () => void;
   onHongPlus3?: () => void;
   onHongGamjeom?: () => void;
+  onHongDouble?: () => void;
   onStartPause?: () => void;
   onResetRound?: () => void;
   onSubtractMode?: () => void;
@@ -84,10 +88,12 @@ export const useGamepad = (mapping: GamepadMapping, actions: GamepadActions) => 
       chungPlus2: actions.onChungPlus2,
       chungPlus3: actions.onChungPlus3,
       chungGamjeom: actions.onChungGamjeom,
+      chungDouble: actions.onChungDouble,
       hongPlus1: actions.onHongPlus1,
       hongPlus2: actions.onHongPlus2,
       hongPlus3: actions.onHongPlus3,
       hongGamjeom: actions.onHongGamjeom,
+      hongDouble: actions.onHongDouble,
       startPause: actions.onStartPause,
       resetRound: actions.onResetRound,
       subtractMode: actions.onSubtractMode,
