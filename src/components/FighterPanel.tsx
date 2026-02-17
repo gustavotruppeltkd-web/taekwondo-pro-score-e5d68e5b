@@ -12,6 +12,7 @@ interface FighterPanelProps {
   roundsToWin: number;
   isSubtractMode: boolean;
   pointHistory: PointEntry[];
+  isWinningByTiebreaker?: boolean;
   onAddPoints: (points: number) => void;
   onAddGamjeom: () => void;
   onDoubleLastPoint: () => void;
@@ -31,12 +32,13 @@ export const FighterPanel = ({
   pointHistory,
   onAddPoints,
   onAddGamjeom,
+  isWinningByTiebreaker = false,
   onDoubleLastPoint,
   animateScore = false,
   disabled = false,
 }: FighterPanelProps) => {
   const isChung = side === 'chung';
-  const isWinning = score > opponentScore;
+  const isWinning = score > opponentScore || (score === opponentScore && isWinningByTiebreaker);
 
   return (
     <div
