@@ -16,10 +16,7 @@ export interface GamepadMapping {
   subtractMode: number | null;
   decisionChung: number | null;
   decisionHong: number | null;
-<<<<<<< HEAD
   resetMatch: number | null;
-=======
->>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
 }
 
 // PS3/PS4 Standard Mapping (as specified by user)
@@ -45,37 +42,22 @@ export const defaultMapping: GamepadMapping = {
   hongPlus2: 5,       // R1
   hongPlus3: 7,       // R2
   hongGamjeom: 3,     // Triangle
-<<<<<<< HEAD
   hongDouble: 2,      // Square (Was Circle=1)
 
-=======
-  hongDouble: 1,      // Circle
-  
->>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
   // Chung (Blue) controls
   chungPlus1: 13,     // D-Pad Down
   chungPlus2: 4,      // L1
   chungPlus3: 6,      // L2
   chungGamjeom: 12,   // D-Pad Up
-<<<<<<< HEAD
   chungDouble: 15,    // D-Pad Right (Was Left=14)
 
-=======
-  chungDouble: 14,    // D-Pad Left
-  
->>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
   // General controls
   startPause: 11,     // R3 (Right analog click)
   resetRound: 10,     // L3 (Left analog click)
   subtractMode: 9,    // Options / Start
-<<<<<<< HEAD
   decisionHong: 1,    // Circle (Was D-Pad Right=15)
   decisionChung: 14,  // D-Pad Left (Was null)
   resetMatch: 8,      // Select / Share / Back
-=======
-  decisionHong: 15,   // D-Pad Right (Red wins)
-  decisionChung: null, // Not mapped (D-Pad Left now used for chungDouble)
->>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
 };
 
 interface GamepadActions {
@@ -94,10 +76,7 @@ interface GamepadActions {
   onSubtractMode?: () => void;
   onDecisionChung?: () => void;
   onDecisionHong?: () => void;
-<<<<<<< HEAD
   onResetMatch?: () => void;
-=======
->>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
 }
 
 export const useGamepad = (mapping: GamepadMapping, actions: GamepadActions) => {
@@ -123,10 +102,7 @@ export const useGamepad = (mapping: GamepadMapping, actions: GamepadActions) => 
       subtractMode: actions.onSubtractMode,
       decisionChung: actions.onDecisionChung,
       decisionHong: actions.onDecisionHong,
-<<<<<<< HEAD
       resetMatch: actions.onResetMatch,
-=======
->>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
     };
 
     for (const [key, action] of Object.entries(actionMap)) {

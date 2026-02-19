@@ -197,37 +197,8 @@ export const TimerPanel = ({
 
             {/* Content Area - Timer dominates */}
             <div className="flex-1 flex flex-col items-center justify-center px-2 py-1 min-h-0">
-              {/* Match Ended Overlay */}
-<<<<<<< HEAD
-
-=======
-              {matchEnded && (
-                <motion.div
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className={cn(
-                    "absolute top-6 left-1/2 -translate-x-1/2 z-20",
-                    "text-lg font-bold uppercase px-4 py-2 rounded-xl whitespace-nowrap",
-                    "border-2 scoreboard-shadow",
-                    matchWinner === 'chung' ? "bg-chung border-chung-dark text-chung-foreground" :
-                    matchWinner === 'hong' ? "bg-hong border-hong-dark text-hong-foreground" :
-                    "bg-muted border-muted-foreground text-foreground"
-                  )}
-                  style={{ fontSize: Math.max(12, 14 * scaleFactor) }}
-                >
-                  {matchWinner ? (
-                    <div className="flex flex-col items-center">
-                      <span className="text-xs opacity-80">VENCEDOR</span>
-                      <span>{winnerName || (matchWinner === 'chung' ? 'CHUNG' : 'HONG')}</span>
-                    </div>
-                  ) : 'EMPATE'}
-                </motion.div>
-              )}
->>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
-
-
               {/* Round Indicator */}
-              <div 
+              <div
                 className="mt-4 mb-0"
                 style={{ transform: `scale(${Math.max(0.7, scaleFactor * 0.9)})` }}
               >
@@ -267,8 +238,8 @@ export const TimerPanel = ({
                     "font-digital font-bold leading-none tracking-tight",
                     "transition-all duration-500",
                     isDanger ? "text-timer-danger text-glow-danger" :
-                    isWarning ? "text-timer-warning text-glow-warning" :
-                    "text-timer text-glow-timer",
+                      isWarning ? "text-timer-warning text-glow-warning" :
+                        "text-timer text-glow-timer",
                     matchEnded && "opacity-50",
                     !isRunning && !matchEnded && "opacity-60 animate-pulse"
                   )}
