@@ -16,7 +16,10 @@ interface FighterPanelProps {
   onAddPoints: (points: number) => void;
   onAddGamjeom: () => void;
   onDoubleLastPoint: () => void;
+<<<<<<< HEAD
   canDouble?: boolean;
+=======
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
   animateScore?: boolean;
   disabled?: boolean;
 }
@@ -35,7 +38,10 @@ export const FighterPanel = ({
   onAddGamjeom,
   isWinningByTiebreaker = false,
   onDoubleLastPoint,
+<<<<<<< HEAD
   canDouble = false,
+=======
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
   animateScore = false,
   disabled = false,
 }: FighterPanelProps) => {
@@ -106,7 +112,11 @@ export const FighterPanel = ({
 
         {/* Gamjeom Counter - Extra large, no label */}
         <div className="flex items-center justify-center mt-8 md:mt-12">
+<<<<<<< HEAD
           <span
+=======
+          <span 
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
             className={cn(
               "font-digital text-gamjeom text-6xl md:text-7xl lg:text-8xl font-bold",
               isSubtractMode && "ring-4 ring-gamjeom rounded-lg px-4 animate-pulse"
@@ -139,7 +149,11 @@ export const FighterPanel = ({
           ))}
           <button
             onClick={onDoubleLastPoint}
+<<<<<<< HEAD
             disabled={disabled || isSubtractMode || !canDouble}
+=======
+            disabled={disabled || isSubtractMode}
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
             className={cn(
               "px-4 py-2 md:px-6 md:py-3 rounded-lg font-bold text-lg md:text-xl",
               "transition-all duration-200 active:scale-95",

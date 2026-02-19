@@ -5,6 +5,10 @@ import { SettingsDialog } from "./SettingsDialog";
 import { GamepadDialog } from "./GamepadDialog";
 import { RefereeDecisionModal } from "./RefereeDecisionModal";
 import { RoundWinnerBanner } from "./RoundWinnerBanner";
+<<<<<<< HEAD
+=======
+import { AudioUnlockButton } from "./AudioUnlockButton";
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
 import { useScoreboard } from "@/hooks/useScoreboard";
 import { useGamepad, GamepadMapping, defaultMapping } from "@/hooks/useGamepad";
 
@@ -25,7 +29,10 @@ export const Scoreboard = () => {
     updateSettings,
     handleRefereeDecision,
     dismissRoundWinner,
+<<<<<<< HEAD
     canDouble,
+=======
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
     toggleSubtractMode,
     setSubtractMode,
     adjustTime,
@@ -35,17 +42,28 @@ export const Scoreboard = () => {
   // Compute tiebreaker winner for live display
   const getTiebreakerWinner = useCallback((): 'chung' | 'hong' | null => {
     if (state.chung.score !== state.hong.score) return null; // not tied, use normal score comparison
+<<<<<<< HEAD
 
     const countEntries = (history: typeof state.chungHistory, value: number, isDouble: boolean) =>
       history.filter(e => e.type === 'score' && e.value === value && (isDouble ? e.isDouble === true : !e.isDouble)).length;
 
+=======
+    
+    const countEntries = (history: typeof state.chungHistory, value: number, isDouble: boolean) =>
+      history.filter(e => e.type === 'score' && e.value === value && (isDouble ? e.isDouble === true : !e.isDouble)).length;
+    
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
     const tiebreakers = [
       { value: 3, isDouble: true },
       { value: 2, isDouble: true },
       { value: 3, isDouble: false },
       { value: 2, isDouble: false },
     ];
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
     for (const tb of tiebreakers) {
       const chungCount = countEntries(state.chungHistory, tb.value, tb.isDouble);
       const hongCount = countEntries(state.hongHistory, tb.value, tb.isDouble);
@@ -82,7 +100,10 @@ export const Scoreboard = () => {
         handleRefereeDecision('hong');
       }
     }, [state.showDecisionModal, handleRefereeDecision]),
+<<<<<<< HEAD
     onResetMatch: resetMatch,
+=======
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
   };
 
   const { connected: gamepadConnected, gamepadName } = useGamepad(gamepadMapping, gamepadActions);
@@ -97,9 +118,15 @@ export const Scoreboard = () => {
 
   return (
     <div className="h-screen w-screen flex overflow-hidden bg-background">
+<<<<<<< HEAD
 
 
       {/* Chung (Blue) Side */}
+=======
+      {/* Audio Unlock Button for iOS */}
+      <AudioUnlockButton />
+
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
       {/* Chung (Blue) Side */}
       <FighterPanel
         side="chung"
@@ -112,7 +139,10 @@ export const Scoreboard = () => {
         isSubtractMode={state.isSubtractMode}
         pointHistory={state.chungHistory}
         isWinningByTiebreaker={tiebreakerWinner === 'chung'}
+<<<<<<< HEAD
         canDouble={canDouble('chung')}
+=======
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
         onAddPoints={(points) => addPoints('chung', points)}
         onAddGamjeom={() => addGamjeom('chung')}
         onDoubleLastPoint={() => doubleLastPoint('chung')}
@@ -131,7 +161,10 @@ export const Scoreboard = () => {
         isSubtractMode={state.isSubtractMode}
         pointHistory={state.hongHistory}
         isWinningByTiebreaker={tiebreakerWinner === 'hong'}
+<<<<<<< HEAD
         canDouble={canDouble('hong')}
+=======
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
         onAddPoints={(points) => addPoints('hong', points)}
         onAddGamjeom={() => addGamjeom('hong')}
         onDoubleLastPoint={() => doubleLastPoint('hong')}
@@ -166,7 +199,10 @@ export const Scoreboard = () => {
         winner={state.showRoundWinner ? state.roundWinner : null}
         winnerName={getWinnerName()}
         round={state.currentRound}
+<<<<<<< HEAD
         matchEnded={state.matchEnded}
+=======
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
         onDismiss={dismissRoundWinner}
       />
 

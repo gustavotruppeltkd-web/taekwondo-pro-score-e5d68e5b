@@ -49,11 +49,19 @@ export interface ScoreboardState {
 const defaultSettings: ScoreboardSettings = {
   roundTime: 120,
   restTime: 60,
+<<<<<<< HEAD
   maxScore: 15,
   maxGamjeom: 5,
   totalRounds: 3,
   chungName: '',
   hongName: '',
+=======
+  maxScore: 20,
+  maxGamjeom: 10,
+  totalRounds: 3,
+  chungName: 'Atleta Azul',
+  hongName: 'Atleta Vermelho',
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
 };
 
 const initialFighterScore: FighterScore = {
@@ -112,10 +120,17 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
   const revertToPreviousRound = useCallback(() => {
     setState(prev => {
       if (!prev.previousRoundSnapshot) return prev;
+<<<<<<< HEAD
 
       const snapshot = prev.previousRoundSnapshot;
       tenSecondAlertRef.current = false;
 
+=======
+      
+      const snapshot = prev.previousRoundSnapshot;
+      tenSecondAlertRef.current = false;
+      
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
       return {
         ...prev,
         chung: { ...snapshot.chung },
@@ -153,17 +168,29 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
       const newChung = { ...prev.chung };
       const newHong = { ...prev.hong };
       const newResults = [...prev.roundResults];
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
       if (winner === 'chung') {
         newChung.roundsWon += 1;
       } else {
         newHong.roundsWon += 1;
       }
+<<<<<<< HEAD
 
       newResults[prev.currentRound - 1] = winner;
 
       const roundsToWin = Math.ceil(settings.totalRounds / 2);
 
+=======
+      
+      newResults[prev.currentRound - 1] = winner;
+      
+      const roundsToWin = Math.ceil(settings.totalRounds / 2);
+      
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
       // Check for match winner
       if (newChung.roundsWon >= roundsToWin) {
         return {
@@ -193,7 +220,11 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
           previousRoundSnapshot: snapshot,
         };
       }
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
       // More rounds to go
       return {
         ...prev,
@@ -222,7 +253,11 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
   // End current round and update state
   const endRound = useCallback((currentState: ScoreboardState): ScoreboardState => {
     const { chung, hong, currentRound } = currentState;
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
     // Save snapshot before changing round
     const snapshot: RoundSnapshot = {
       chung: { ...chung },
@@ -232,23 +267,38 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
       chungHistory: [...currentState.chungHistory],
       hongHistory: [...currentState.hongHistory],
     };
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
     // Check for tie - apply tiebreaker criteria
     if (chung.score === hong.score) {
       // Tiebreaker order: 1) double of 3, 2) double of 2, 3) 3 points, 4) 2 points
       const chungHistory = currentState.chungHistory;
       const hongHistory = currentState.hongHistory;
+<<<<<<< HEAD
 
       const countEntries = (history: typeof chungHistory, value: number, isDouble: boolean) =>
         history.filter(e => e.type === 'score' && e.value === value && (isDouble ? e.isDouble === true : !e.isDouble)).length;
 
+=======
+      
+      const countEntries = (history: typeof chungHistory, value: number, isDouble: boolean) =>
+        history.filter(e => e.type === 'score' && e.value === value && (isDouble ? e.isDouble === true : !e.isDouble)).length;
+      
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
       const tiebreakers = [
         { value: 3, isDouble: true },   // Dobro de 3
         { value: 2, isDouble: true },   // Dobro de 2
         { value: 3, isDouble: false },  // 3 pontos
         { value: 2, isDouble: false },  // 2 pontos
       ];
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
       let tieWinner: 'chung' | 'hong' | null = null;
       for (const tb of tiebreakers) {
         const chungCount = countEntries(chungHistory, tb.value, tb.isDouble);
@@ -256,7 +306,11 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
         if (chungCount > hongCount) { tieWinner = 'chung'; break; }
         if (hongCount > chungCount) { tieWinner = 'hong'; break; }
       }
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
       if (!tieWinner) {
         // No tiebreaker resolved - show decision modal
         return {
@@ -266,21 +320,35 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
           previousRoundSnapshot: snapshot,
         };
       }
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
       // Tiebreaker resolved automatically
       const newChungTie = { ...chung };
       const newHongTie = { ...hong };
       const newResultsTie = [...currentState.roundResults];
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
       if (tieWinner === 'chung') {
         newChungTie.roundsWon += 1;
       } else {
         newHongTie.roundsWon += 1;
       }
       newResultsTie[currentRound - 1] = tieWinner;
+<<<<<<< HEAD
 
       const roundsToWin = Math.ceil(settings.totalRounds / 2);
 
+=======
+      
+      const roundsToWin = Math.ceil(settings.totalRounds / 2);
+      
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
       if (newChungTie.roundsWon >= roundsToWin || newHongTie.roundsWon >= roundsToWin) {
         return {
           ...currentState,
@@ -295,7 +363,11 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
           previousRoundSnapshot: snapshot,
         };
       }
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
       return {
         ...currentState,
         chung: newChungTie,
@@ -309,22 +381,38 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
         previousRoundSnapshot: snapshot,
       };
     }
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
     const roundWinner = chung.score > hong.score ? 'chung' : 'hong';
     const newChung = { ...chung };
     const newHong = { ...hong };
     const newResults = [...currentState.roundResults];
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
     if (roundWinner === 'chung') {
       newChung.roundsWon += 1;
     } else {
       newHong.roundsWon += 1;
     }
+<<<<<<< HEAD
 
     newResults[currentRound - 1] = roundWinner;
 
     const roundsToWin = Math.ceil(settings.totalRounds / 2);
 
+=======
+    
+    newResults[currentRound - 1] = roundWinner;
+    
+    const roundsToWin = Math.ceil(settings.totalRounds / 2);
+    
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
     // Check for match winner
     if (newChung.roundsWon >= roundsToWin) {
       return {
@@ -354,7 +442,11 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
         previousRoundSnapshot: snapshot,
       };
     }
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
     // More rounds to go
     return {
       ...currentState,
@@ -374,7 +466,11 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
   const checkImmediateVictory = useCallback((newState: ScoreboardState): ScoreboardState => {
     const { chung, hong, currentRound } = newState;
     const scoreDiff = Math.abs(chung.score - hong.score);
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
     // Point gap victory
     if (scoreDiff >= settings.maxScore) {
       return endRound({
@@ -393,11 +489,19 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
         chungHistory: [...newState.chungHistory],
         hongHistory: [...newState.hongHistory],
       };
+<<<<<<< HEAD
 
       const newHong = { ...hong, roundsWon: hong.roundsWon + 1 };
       const newResults = [...newState.roundResults];
       newResults[currentRound - 1] = 'hong';
 
+=======
+      
+      const newHong = { ...hong, roundsWon: hong.roundsWon + 1 };
+      const newResults = [...newState.roundResults];
+      newResults[currentRound - 1] = 'hong';
+      
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
       const roundsToWin = Math.ceil(settings.totalRounds / 2);
       if (newHong.roundsWon >= roundsToWin) {
         return {
@@ -434,11 +538,19 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
         chungHistory: [...newState.chungHistory],
         hongHistory: [...newState.hongHistory],
       };
+<<<<<<< HEAD
 
       const newChung = { ...chung, roundsWon: chung.roundsWon + 1 };
       const newResults = [...newState.roundResults];
       newResults[currentRound - 1] = 'chung';
 
+=======
+      
+      const newChung = { ...chung, roundsWon: chung.roundsWon + 1 };
+      const newResults = [...newState.roundResults];
+      newResults[currentRound - 1] = 'chung';
+      
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
       const roundsToWin = Math.ceil(settings.totalRounds / 2);
       if (newChung.roundsWon >= roundsToWin) {
         return {
@@ -472,6 +584,7 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
   // Double last point
   const doubleLastPoint = useCallback((fighter: 'chung' | 'hong') => {
     if (state.matchEnded || state.isResting) return;
+<<<<<<< HEAD
 
     setState(prev => {
       const historyKey = fighter === 'chung' ? 'chungHistory' : 'hongHistory';
@@ -480,15 +593,31 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
       const lastScoreEntry = [...history].reverse().find(e => e.type === 'score' && e.value > 0);
       if (!lastScoreEntry) return prev;
 
+=======
+    
+    setState(prev => {
+      const historyKey = fighter === 'chung' ? 'chungHistory' : 'hongHistory';
+      const history = prev[historyKey];
+      
+      const lastScoreEntry = [...history].reverse().find(e => e.type === 'score' && e.value > 0);
+      if (!lastScoreEntry) return prev;
+      
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
       const doubleValue = lastScoreEntry.value;
       const newScore = Math.max(0, prev[fighter].score + doubleValue);
       const newHistory = [
         ...history,
         { value: doubleValue, type: 'score' as const, timestamp: Date.now(), isDouble: true }
       ];
+<<<<<<< HEAD
 
       playScoreBeep();
 
+=======
+      
+      playScoreBeep();
+      
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
       const newState = {
         ...prev,
         [fighter]: { ...prev[fighter], score: newScore },
@@ -501,10 +630,17 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
   // Scoring functions with subtract mode support
   const addPoints = useCallback((fighter: 'chung' | 'hong', points: number) => {
     if (state.matchEnded || state.isResting) return;
+<<<<<<< HEAD
 
     const actualPoints = state.isSubtractMode ? -points : points;
     playScoreBeep();
 
+=======
+    
+    const actualPoints = state.isSubtractMode ? -points : points;
+    playScoreBeep();
+    
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
     setState(prev => {
       const newScore = Math.max(0, prev[fighter].score + actualPoints);
       const historyKey = fighter === 'chung' ? 'chungHistory' : 'hongHistory';
@@ -512,7 +648,11 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
         ...prev[historyKey],
         { value: actualPoints, type: 'score' as const, timestamp: Date.now() }
       ];
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
       const newState = {
         ...prev,
         [fighter]: { ...prev[fighter], score: newScore },
@@ -525,10 +665,17 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
   const addGamjeom = useCallback((fighter: 'chung' | 'hong') => {
     if (state.matchEnded || state.isResting) return;
     playFaultBeep();
+<<<<<<< HEAD
 
     setState(prev => {
       const opponent = fighter === 'chung' ? 'hong' : 'chung';
 
+=======
+    
+    setState(prev => {
+      const opponent = fighter === 'chung' ? 'hong' : 'chung';
+      
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
       if (prev.isSubtractMode) {
         // Subtract gamjeom (correction)
         const newGamjeom = Math.max(0, prev[fighter].gamjeom - 1);
@@ -538,7 +685,11 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
           ...prev[historyKey],
           { value: -1, type: 'gamjeom' as const, timestamp: Date.now() }
         ];
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
         return {
           ...prev,
           [fighter]: { ...prev[fighter], gamjeom: newGamjeom },
@@ -546,11 +697,19 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
           [historyKey]: newHistory,
         };
       }
+<<<<<<< HEAD
 
       // Add gamjeom normally
       const historyKey = fighter === 'chung' ? 'chungHistory' : 'hongHistory';
       const opponentHistoryKey = opponent === 'chung' ? 'chungHistory' : 'hongHistory';
 
+=======
+      
+      // Add gamjeom normally
+      const historyKey = fighter === 'chung' ? 'chungHistory' : 'hongHistory';
+      const opponentHistoryKey = opponent === 'chung' ? 'chungHistory' : 'hongHistory';
+      
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
       const newState = {
         ...prev,
         [fighter]: { ...prev[fighter], gamjeom: prev[fighter].gamjeom + 1 },
@@ -642,7 +801,11 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
         setState(prev => {
           if (prev.timeRemaining <= 1) {
             playRoundEndBeep();
+<<<<<<< HEAD
 
+=======
+            
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
             if (prev.isResting) {
               // Rest period ended, start next round
               tenSecondAlertRef.current = false;
@@ -721,11 +884,14 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
     setSubtractMode,
     adjustTime,
     revertToPreviousRound,
+<<<<<<< HEAD
     canDouble: (fighter: 'chung' | 'hong') => {
       const history = state[fighter === 'chung' ? 'chungHistory' : 'hongHistory'];
       if (history.length === 0) return false;
       const lastEntry = history[history.length - 1];
       return lastEntry.type === 'score' && (lastEntry.value === 2 || lastEntry.value === 3) && !lastEntry.isDouble;
     },
+=======
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
   };
 };

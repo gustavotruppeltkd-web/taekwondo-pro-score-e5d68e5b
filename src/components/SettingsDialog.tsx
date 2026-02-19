@@ -57,7 +57,11 @@ export const SettingsDialog = ({
               <User className="w-4 h-4" />
               Atletas
             </h3>
+<<<<<<< HEAD
 
+=======
+            
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
             <div className="grid grid-cols-1 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="chungName" className="text-chung">Nome Chung (Azul)</Label>
@@ -65,24 +69,40 @@ export const SettingsDialog = ({
                   id="chungName"
                   type="text"
                   value={localSettings.chungName}
+<<<<<<< HEAD
                   onChange={(e) => setLocalSettings(prev => ({
                     ...prev,
                     chungName: e.target.value
+=======
+                  onChange={(e) => setLocalSettings(prev => ({ 
+                    ...prev, 
+                    chungName: e.target.value || 'Atleta Azul' 
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
                   }))}
                   className="bg-input border-border"
                   placeholder="Atleta Azul"
                 />
               </div>
+<<<<<<< HEAD
 
+=======
+              
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
               <div className="space-y-2">
                 <Label htmlFor="hongName" className="text-hong">Nome Hong (Vermelho)</Label>
                 <Input
                   id="hongName"
                   type="text"
                   value={localSettings.hongName}
+<<<<<<< HEAD
                   onChange={(e) => setLocalSettings(prev => ({
                     ...prev,
                     hongName: e.target.value
+=======
+                  onChange={(e) => setLocalSettings(prev => ({ 
+                    ...prev, 
+                    hongName: e.target.value || 'Atleta Vermelho' 
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
                   }))}
                   className="bg-input border-border"
                   placeholder="Atleta Vermelho"
@@ -96,7 +116,11 @@ export const SettingsDialog = ({
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
               Tempo
             </h3>
+<<<<<<< HEAD
 
+=======
+            
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="roundTime">Tempo de Round (seg)</Label>
@@ -104,23 +128,39 @@ export const SettingsDialog = ({
                   id="roundTime"
                   type="number"
                   value={localSettings.roundTime}
+<<<<<<< HEAD
                   onChange={(e) => setLocalSettings(prev => ({
                     ...prev,
                     roundTime: parseInt(e.target.value) || 120
+=======
+                  onChange={(e) => setLocalSettings(prev => ({ 
+                    ...prev, 
+                    roundTime: parseInt(e.target.value) || 120 
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
                   }))}
                   className="bg-input border-border"
                 />
               </div>
+<<<<<<< HEAD
 
+=======
+              
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
               <div className="space-y-2">
                 <Label htmlFor="restTime">Tempo de Descanso (seg)</Label>
                 <Input
                   id="restTime"
                   type="number"
                   value={localSettings.restTime}
+<<<<<<< HEAD
                   onChange={(e) => setLocalSettings(prev => ({
                     ...prev,
                     restTime: parseInt(e.target.value) || 60
+=======
+                  onChange={(e) => setLocalSettings(prev => ({ 
+                    ...prev, 
+                    restTime: parseInt(e.target.value) || 60 
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
                   }))}
                   className="bg-input border-border"
                 />
@@ -133,7 +173,11 @@ export const SettingsDialog = ({
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
               Condições de Vitória
             </h3>
+<<<<<<< HEAD
 
+=======
+            
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="maxScore">Gap de Pontos</Label>
@@ -141,23 +185,39 @@ export const SettingsDialog = ({
                   id="maxScore"
                   type="number"
                   value={localSettings.maxScore}
+<<<<<<< HEAD
                   onChange={(e) => setLocalSettings(prev => ({
                     ...prev,
                     maxScore: parseInt(e.target.value) || 20
+=======
+                  onChange={(e) => setLocalSettings(prev => ({ 
+                    ...prev, 
+                    maxScore: parseInt(e.target.value) || 20 
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
                   }))}
                   className="bg-input border-border"
                 />
               </div>
+<<<<<<< HEAD
 
+=======
+              
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
               <div className="space-y-2">
                 <Label htmlFor="maxGamjeom">Limite de Faltas</Label>
                 <Input
                   id="maxGamjeom"
                   type="number"
                   value={localSettings.maxGamjeom}
+<<<<<<< HEAD
                   onChange={(e) => setLocalSettings(prev => ({
                     ...prev,
                     maxGamjeom: parseInt(e.target.value) || 10
+=======
+                  onChange={(e) => setLocalSettings(prev => ({ 
+                    ...prev, 
+                    maxGamjeom: parseInt(e.target.value) || 10 
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
                   }))}
                   className="bg-input border-border"
                 />
@@ -172,8 +232,13 @@ export const SettingsDialog = ({
                 min="1"
                 max="5"
                 value={localSettings.totalRounds}
+<<<<<<< HEAD
                 onChange={(e) => setLocalSettings(prev => ({
                   ...prev,
+=======
+                onChange={(e) => setLocalSettings(prev => ({ 
+                  ...prev, 
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
                   totalRounds: Math.min(5, Math.max(1, parseInt(e.target.value) || 3))
                 }))}
                 className="bg-input border-border"
@@ -187,7 +252,11 @@ export const SettingsDialog = ({
               <Volume2 className="w-4 h-4" />
               Áudio
             </h3>
+<<<<<<< HEAD
 
+=======
+            
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
             <div className="space-y-3">
               {[
                 { key: 'roundStart', label: 'Início de Round' },
@@ -202,7 +271,11 @@ export const SettingsDialog = ({
                       accept="audio/*"
                       className="hidden"
                       onChange={(e) => handleAudioUpload(
+<<<<<<< HEAD
                         key as keyof typeof audioFiles,
+=======
+                        key as keyof typeof audioFiles, 
+>>>>>>> 4626dc2268bb028cf6484ed50806830590d046b8
                         e.target.files?.[0] || null
                       )}
                     />
