@@ -11,14 +11,14 @@ const AuthCallback = () => {
         // Handle the auth callback
         supabase.auth.onAuthStateChange((event, session) => {
             if (event === "SIGNED_IN") {
-                navigate("/app", { replace: true });
+                navigate("/", { replace: true });
             }
         });
 
         // Also check current session directly in case the event fired before we mounted
         supabase.auth.getSession().then(({ data: { session } }) => {
             if (session) {
-                navigate("/app", { replace: true });
+                navigate("/", { replace: true });
             }
         });
     }, [navigate]);
