@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Taekwondo Scoreboard Design System */
+
+@layer base {
+  :root {
+    /* Core backgrounds */
+    --background: 220 20% 6%;
+    --foreground: 0 0% 98%;
+
+    /* Chung (Blue) Fighter */
+    --chung: 210 100% 50%;
+    --chung-dark: 210 100% 35%;
+    --chung-glow: 210 100% 60%;
+    --chung-foreground: 0 0% 100%;
+
+    /* Hong (Red) Fighter */
+    --hong: 0 85% 50%;
+    --hong-dark: 0 85% 35%;
+    --hong-glow: 0 85% 60%;
+    --hong-foreground: 0 0% 100%;
+
+    /* UI Elements */
+    --card: 220 20% 10%;
+    --card-foreground: 0 0% 98%;
+    --popover: 220 20% 8%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 45 100% 50%;
+    --primary-foreground: 220 20% 6%;
+
+    --secondary: 220 15% 20%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 220 15% 15%;
+    --muted-foreground: 220 10% 60%;
+
+    --accent: 45 100% 50%;
+    --accent-foreground: 220 20% 6%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 220 15% 20%;
+    --input: 220 15% 15%;
+    --ring: 45 100% 50%;
+
+    --radius: 0.5rem;
+
+    /* Timer colors */
+    --timer: 120 60% 50%;
+    --timer-warning: 45 100% 50%;
+    --timer-danger: 0 85% 50%;
+
+    /* Gam-jeom (Fault) */
+    --gamjeom: 45 100% 50%;
+
+    /* Winning highlight */
+    --winning: 140 70% 55%;
+    --winning-glow: 140 70% 65%;
+  }
+
+  .dark {
+    --background: 220 20% 4%;
+    --foreground: 0 0% 98%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer utilities {
+  .font-digital {
+    font-family: 'Orbitron', monospace;
+  }
+
+  .text-glow-chung {
+    text-shadow: 0 0 20px hsl(var(--chung-glow)), 0 0 40px hsl(var(--chung-glow) / 0.5);
+  }
+
+  .text-glow-hong {
+    text-shadow: 0 0 20px hsl(var(--hong-glow)), 0 0 40px hsl(var(--hong-glow) / 0.5);
+  }
+
+  .text-glow-timer {
+    text-shadow: 0 0 30px hsl(var(--timer)), 0 0 60px hsl(var(--timer) / 0.5);
+  }
+
+  .text-glow-warning {
+    text-shadow: 0 0 30px hsl(var(--timer-warning)), 0 0 60px hsl(var(--timer-warning) / 0.5);
+  }
+
+  .text-glow-danger {
+    text-shadow: 0 0 30px hsl(var(--timer-danger)), 0 0 60px hsl(var(--timer-danger) / 0.5);
+  }
+
+  .text-glow-winning {
+    text-shadow: 0 0 25px hsl(var(--winning-glow)), 0 0 50px hsl(var(--winning-glow) / 0.5);
+  }
+
+  .text-winning {
+    color: hsl(var(--winning));
+  }
+
+  .bg-chung-gradient {
+    background: linear-gradient(135deg, hsl(var(--chung-dark)) 0%, hsl(var(--chung)) 50%, hsl(var(--chung-dark)) 100%);
+  }
+
+  .bg-hong-gradient {
+    background: linear-gradient(135deg, hsl(var(--hong-dark)) 0%, hsl(var(--hong)) 50%, hsl(var(--hong-dark)) 100%);
+  }
+
+  .scoreboard-shadow {
+    box-shadow: 0 0 60px rgba(0, 0, 0, 0.8), inset 0 0 30px rgba(0, 0, 0, 0.3);
+  }
+}
