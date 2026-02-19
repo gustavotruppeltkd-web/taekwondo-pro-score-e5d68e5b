@@ -119,19 +119,30 @@ const Login = () => {
 
                 <motion.div
                     animate={{
-                        x: mousePosition.x * 0.02,
-                        y: mousePosition.y * 0.02,
+                        x: [0, 30, -20, 0],
+                        y: [0, -50, 20, 0],
+                        scale: [1, 1.1, 0.9, 1],
                     }}
-                    transition={{ type: "spring", damping: 50, stiffness: 400 }}
+                    transition={{
+                        duration: 10,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                    }}
                     className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] rounded-full bg-chung/10 blur-[100px]"
                 />
 
                 <motion.div
                     animate={{
-                        x: mousePosition.x * -0.02,
-                        y: mousePosition.y * -0.02,
+                        x: [0, -40, 20, 0],
+                        y: [0, 60, -30, 0],
+                        scale: [1, 0.9, 1.1, 1],
                     }}
-                    transition={{ type: "spring", damping: 50, stiffness: 400 }}
+                    transition={{
+                        duration: 15,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                        delay: 2
+                    }}
                     className="absolute bottom-[-20%] right-[-10%] w-[70%] h-[70%] rounded-full bg-hong/10 blur-[100px]"
                 />
             </div>
