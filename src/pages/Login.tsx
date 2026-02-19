@@ -176,7 +176,7 @@ const Login = () => {
                                 transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.2 }}
                                 className="inline-flex items-center justify-center p-4 rounded-2xl bg-gradient-to-br from-white/10 to-transparent border border-white/10 shadow-inner group-hover:scale-110 transition-transform duration-500 ease-out"
                             >
-                                <Shield className="w-12 h-12 text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]" />
+                                <img src="/favicon.svg" alt="Logo" className="w-12 h-12 drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]" />
                             </motion.div>
 
                             <motion.div
