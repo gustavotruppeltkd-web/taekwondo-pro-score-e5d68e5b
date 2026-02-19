@@ -20,22 +20,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         // Check active sessions and sets the user
         supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            setUser(session?.user ?? null);
-            setLoading(false);
+            if (session?.user?.email) {
+                checkWhitelist(session.user.email).then((allowed) => {
+                    if (allowed) {
+                        setSession(session);
+                        setUser(session.user);
+                    } else {
+                        signOut();
+                    }
+                    setLoading(false);
+                });
+            } else {
+                setLoading(false);
+            }
         });
 
         // Listen for changes on auth state (logged in, signed out, etc.)
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
-            setUser(session?.user ?? null);
-            setLoading(false);
+            if (session?.user?.email) {
+                checkWhitelist(session.user.email).then((allowed) => {
+                    if (allowed) {
+                        setSession(session);
+                        setUser(session.user);
+                    } else {
+                        signOut();
+                    }
+                    setLoading(false);
+                });
+            } else {
+                setSession(null);
+                setUser(null);
+                setLoading(false);
+            }
         });
 
         return () => subscription.unsubscribe();
     }, []);
+
+    const checkWhitelist = async (email: string) => {
+        const { data, error } = await supabase
+            .from('allowed_users')
+            .select('email')
+            .eq('email', email)
+            .single();
+
+        if (error || !data) {
+            console.warn(`Access denied for ${email}: Not in whitelist.`);
+            return false;
+        }
+        return true;
+    };
 
     const signOut = async () => {
         await supabase.auth.signOut();

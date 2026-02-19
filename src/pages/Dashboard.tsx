@@ -3,6 +3,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { LogOut, User } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { UserManagement } from "@/components/UserManagement";
 
 const Dashboard = () => {
     const { user, signOut } = useAuth();
@@ -61,6 +62,11 @@ const Dashboard = () => {
                             </p>
                         </CardContent>
                     </Card>
+                </div>
+
+                {/* Admin Section - User Management */}
+                <div className="grid gap-6">
+                    <UserManagement />
                 </div>
             </div>
         </div>
