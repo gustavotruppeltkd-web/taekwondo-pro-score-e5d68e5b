@@ -11,7 +11,9 @@ interface GamepadDialogProps {
   mapping: GamepadMapping;
   onSaveMapping: (mapping: GamepadMapping) => void;
   gamepadConnected: boolean;
+  gamepadCount: number;
   gamepadName: string | null;
+  gamepadNames: string[];
 }
 
 const mappingLabels: Record<keyof GamepadMapping, { label: string; side: 'chung' | 'hong' | 'general' }> = {
@@ -30,6 +32,7 @@ const mappingLabels: Record<keyof GamepadMapping, { label: string; side: 'chung'
   subtractMode: { label: 'Modo Correção (-)', side: 'general' },
   decisionChung: { label: 'Decisão Azul (Empate)', side: 'general' },
   decisionHong: { label: 'Decisão Vermelho (Empate)', side: 'general' },
+  resetMatch: { label: 'Resetar Luta', side: 'general' },
 };
 
 const buttonNames: Record<number, string> = {
@@ -59,7 +62,9 @@ export const GamepadDialog = ({
   mapping,
   onSaveMapping,
   gamepadConnected,
+  gamepadCount,
   gamepadName,
+  gamepadNames,
 }: GamepadDialogProps) => {
   const [localMapping, setLocalMapping] = useState<GamepadMapping>(mapping);
   const [listeningFor, setListeningFor] = useState<keyof GamepadMapping | null>(null);
@@ -74,7 +79,7 @@ export const GamepadDialog = ({
     }
   }, [listeningFor]);
 
-  useGamepadButtonListener(open && listeningFor ? handleButtonPress : () => {});
+  useGamepadButtonListener(open && listeningFor ? handleButtonPress : () => { });
 
   const handleSave = () => {
     onSaveMapping(localMapping);
@@ -97,8 +102,8 @@ export const GamepadDialog = ({
         className={cn(
           "flex items-center justify-between p-3 rounded-lg transition-all",
           "border-2",
-          isListening 
-            ? "border-primary bg-primary/10 animate-pulse" 
+          isListening
+            ? "border-primary bg-primary/10 animate-pulse"
             : "border-border hover:border-muted-foreground",
           side === 'chung' && "hover:border-chung/50",
           side === 'hong' && "hover:border-hong/50"
@@ -107,8 +112,8 @@ export const GamepadDialog = ({
         <span className="text-sm font-medium">{label}</span>
         <span className={cn(
           "text-xs px-2 py-1 rounded",
-          isListening 
-            ? "bg-primary text-primary-foreground" 
+          isListening
+            ? "bg-primary text-primary-foreground"
             : "bg-muted text-muted-foreground"
         )}>
           {isListening ? 'Pressione...' : buttonIndex !== null ? buttonNames[buttonIndex] || `Botão ${buttonIndex}` : 'Não mapeado'}
@@ -139,10 +144,23 @@ export const GamepadDialog = ({
             )} />
             <div className="flex-1">
               <p className="text-sm font-medium">
-                {gamepadConnected ? 'Controle Conectado' : 'Nenhum controle detectado'}
+                {gamepadConnected
+                  ? `${gamepadCount} Controle${gamepadCount > 1 ? 's' : ''} Conectado${gamepadCount > 1 ? 's' : ''}`
+                  : 'Nenhum controle detectado'}
               </p>
-              {gamepadName && (
-                <p className="text-xs text-muted-foreground truncate">{gamepadName}</p>
+              {gamepadNames.length > 0 && (
+                <div className="space-y-0.5">
+                  {gamepadNames.map((name, i) => (
+                    <p key={i} className="text-xs text-muted-foreground truncate">
+                      {i + 1}. {name}
+                    </p>
+                  ))}
+                </div>
+              )}
+              {gamepadCount >= 2 && (
+                <p className="text-xs text-timer mt-1 font-medium">
+                  ✓ Modo consenso ativo (pontos precisam de 2 controles)
+                </p>
               )}
             </div>
           </div>
@@ -175,7 +193,7 @@ export const GamepadDialog = ({
               Controles Gerais
             </h3>
             <div className="grid gap-2">
-              {(['startPause', 'resetRound', 'subtractMode', 'decisionChung', 'decisionHong'] as const).map(renderMappingButton)}
+              {(['startPause', 'resetRound', 'resetMatch', 'subtractMode', 'decisionChung', 'decisionHong'] as const).map(renderMappingButton)}
             </div>
           </div>
 

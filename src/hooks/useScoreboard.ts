@@ -469,7 +469,7 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
     return newState;
   }, [settings.maxScore, settings.maxGamjeom, settings.totalRounds, settings.restTime, endRound]);
 
-  // Double last point
+  // Double last point (or undo last double in subtract mode)
   const doubleLastPoint = useCallback((fighter: 'chung' | 'hong') => {
     if (state.matchEnded || state.isResting) return;
 
@@ -477,6 +477,30 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
       const historyKey = fighter === 'chung' ? 'chungHistory' : 'hongHistory';
       const history = prev[historyKey];
 
+      if (prev.isSubtractMode) {
+        // UNDO DOUBLE: find the last double entry and remove it
+        const lastDoubleIndex = [...history].reverse().findIndex(e => e.isDouble);
+        if (lastDoubleIndex === -1) return prev;
+
+        const actualIndex = history.length - 1 - lastDoubleIndex;
+        const doubleEntry = history[actualIndex];
+        const subtractValue = doubleEntry.value;
+
+        const newHistory = [...history];
+        newHistory.splice(actualIndex, 1);
+
+        const newScore = Math.max(0, prev[fighter].score - subtractValue);
+
+        playScoreBeep();
+
+        return {
+          ...prev,
+          [fighter]: { ...prev[fighter], score: newScore },
+          [historyKey]: newHistory,
+        };
+      }
+
+      // NORMAL: double the last scoring entry
       const lastScoreEntry = [...history].reverse().find(e => e.type === 'score' && e.value > 0);
       if (!lastScoreEntry) return prev;
 
@@ -496,7 +520,7 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
       };
       return checkImmediateVictory(newState);
     });
-  }, [checkImmediateVictory, state.matchEnded, state.isResting]);
+  }, [checkImmediateVictory, state.matchEnded, state.isResting, state.isSubtractMode]);
 
   // Scoring functions with subtract mode support
   const addPoints = useCallback((fighter: 'chung' | 'hong', points: number) => {

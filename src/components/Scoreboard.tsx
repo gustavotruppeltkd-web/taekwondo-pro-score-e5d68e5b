@@ -85,7 +85,7 @@ export const Scoreboard = () => {
     onResetMatch: resetMatch,
   };
 
-  const { connected: gamepadConnected, gamepadName } = useGamepad(gamepadMapping, gamepadActions);
+  const { connected: gamepadConnected, connectedCount: gamepadCount, gamepadName, gamepadNames } = useGamepad(gamepadMapping, gamepadActions);
 
   const roundsToWin = Math.ceil(settings.totalRounds / 2);
 
@@ -112,6 +112,7 @@ export const Scoreboard = () => {
         pointHistory={state.chungHistory}
         isWinningByTiebreaker={tiebreakerWinner === 'chung'}
         canDouble={canDouble('chung')}
+        canUndoDouble={state.isSubtractMode && state.chungHistory.some(e => e.isDouble)}
         onAddPoints={(points) => addPoints('chung', points)}
         onAddGamjeom={() => addGamjeom('chung')}
         onDoubleLastPoint={() => doubleLastPoint('chung')}
@@ -131,6 +132,7 @@ export const Scoreboard = () => {
         pointHistory={state.hongHistory}
         isWinningByTiebreaker={tiebreakerWinner === 'hong'}
         canDouble={canDouble('hong')}
+        canUndoDouble={state.isSubtractMode && state.hongHistory.some(e => e.isDouble)}
         onAddPoints={(points) => addPoints('hong', points)}
         onAddGamjeom={() => addGamjeom('hong')}
         onDoubleLastPoint={() => doubleLastPoint('hong')}
@@ -147,6 +149,7 @@ export const Scoreboard = () => {
         matchEnded={state.matchEnded}
         matchWinner={state.matchWinner}
         gamepadConnected={gamepadConnected}
+        gamepadCount={gamepadCount}
         isSubtractMode={state.isSubtractMode}
         roundResults={state.roundResults}
         winnerName={state.matchWinner === 'chung' ? settings.chungName : settings.hongName}
@@ -193,7 +196,9 @@ export const Scoreboard = () => {
         mapping={gamepadMapping}
         onSaveMapping={setGamepadMapping}
         gamepadConnected={gamepadConnected}
+        gamepadCount={gamepadCount}
         gamepadName={gamepadName}
+        gamepadNames={gamepadNames}
       />
     </div>
   );

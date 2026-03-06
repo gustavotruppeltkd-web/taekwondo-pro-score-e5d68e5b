@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { Trash2, UserPlus, ShieldAlert, Loader2 } from "lucide-react";
+import { Trash2, UserPlus, ShieldAlert, Loader2, Send } from "lucide-react";
 
 interface AllowedUser {
     id: string;
@@ -18,6 +18,8 @@ export function UserManagement() {
     const [newEmail, setNewEmail] = useState("");
     const [loading, setLoading] = useState(true);
     const [adding, setAdding] = useState(false);
+    const [sendingInvite, setSendingInvite] = useState<string | null>(null);
+    const [removing, setRemoving] = useState<string | null>(null);
     const { toast } = useToast();
 
     useEffect(() => {
@@ -33,62 +35,119 @@ export function UserManagement() {
 
         if (error) {
             console.error("Error fetching users:", error);
-            // Don't show toast error here to avoid spamming if not admin (RLS will block)
         } else {
             setUsers(data || []);
         }
         setLoading(false);
     };
 
+    const sendMagicLink = async (email: string) => {
+        const { error } = await supabase.auth.signInWithOtp({
+            email,
+            options: {
+                emailRedirectTo: `${window.location.origin}/auth/callback`,
+                shouldCreateUser: true,
+            },
+        });
+        return error;
+    };
+
     const addUser = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newEmail) return;
 
+        const emailNormalized = newEmail.toLowerCase().trim();
         setAdding(true);
-        const { error } = await supabase
+
+        // Step 1: Insert into allowed_users
+        const { error: insertError } = await supabase
             .from("allowed_users")
-            .insert([{ email: newEmail.toLowerCase().trim() }]);
+            .insert([{ email: emailNormalized }]);
+
+        if (insertError) {
+            toast({
+                variant: "destructive",
+                title: "Erro ao adicionar",
+                description: insertError.message,
+            });
+            setAdding(false);
+            return;
+        }
+
+        // Step 2: Send Magic Link (creates user in Supabase Auth + sends email)
+        const otpError = await sendMagicLink(emailNormalized);
+
+        if (otpError) {
+            toast({
+                variant: "destructive",
+                title: "Usuário autorizado, mas falha ao enviar convite",
+                description: `${emailNormalized} foi adicionado à lista, mas houve erro ao enviar o link: ${otpError.message}`,
+            });
+        } else {
+            toast({
+                title: "✅ Usuário convidado com sucesso!",
+                description: `Um link de acesso foi enviado para ${emailNormalized}`,
+            });
+        }
+
+        setNewEmail("");
+        fetchUsers();
+        setAdding(false);
+    };
+
+    const resendInvite = async (email: string) => {
+        setSendingInvite(email);
+        const error = await sendMagicLink(email);
 
         if (error) {
             toast({
                 variant: "destructive",
-                title: "Erro ao adicionar",
+                title: "Erro ao reenviar convite",
                 description: error.message,
             });
         } else {
             toast({
-                title: "Usuário convidado!",
-                description: `${newEmail} agora pode fazer login.`,
+                title: "📧 Convite reenviado!",
+                description: `Novo link de acesso enviado para ${email}`,
             });
-            setNewEmail("");
-            fetchUsers();
         }
-        setAdding(false);
+        setSendingInvite(null);
     };
 
     const removeUser = async (email: string) => {
-        const { error } = await supabase
+        setRemoving(email);
+
+        // Step 1: Delete from Supabase Auth immediately via database function
+        const { error: authError } = await supabase.rpc("delete_auth_user", {
+            target_email: email,
+        });
+
+        if (authError) {
+            console.warn("Could not delete from Auth (user may not have logged in yet):", authError.message);
+            // Continue anyway — user might not exist in Auth yet
+        }
+
+        // Step 2: Delete from allowed_users
+        const { error: deleteError } = await supabase
             .from("allowed_users")
             .delete()
             .eq("email", email);
 
-        if (error) {
+        if (deleteError) {
             toast({
                 variant: "destructive",
                 title: "Erro ao remover",
-                description: error.message,
+                description: deleteError.message,
             });
         } else {
             toast({
-                title: "Usuário removido",
-                description: "Acesso revogado.",
+                title: "🚫 Acesso revogado!",
+                description: `${email} foi removido do sistema completamente.`,
             });
             fetchUsers();
         }
+        setRemoving(null);
     };
-
-    // If request failed silently (RLS), we might not be admin.
-    // Ideally we check permission before rendering, but RLS handles security.
 
     return (
         <Card className="border-primary/20 bg-black/20 backdrop-blur-sm">
@@ -141,15 +200,36 @@ export function UserManagement() {
                                     </div>
 
                                     {user.role !== 'admin' && (
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => removeUser(user.email)}
-                                            className="opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10 transition-all"
-                                            title="Revogar acesso"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </Button>
+                                        <div className="flex items-center gap-1">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => resendInvite(user.email)}
+                                                disabled={sendingInvite === user.email}
+                                                className="opacity-0 group-hover:opacity-100 text-primary hover:text-primary hover:bg-primary/10 transition-all"
+                                                title="Reenviar convite"
+                                            >
+                                                {sendingInvite === user.email ? (
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                ) : (
+                                                    <Send className="w-4 h-4" />
+                                                )}
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => removeUser(user.email)}
+                                                disabled={removing === user.email}
+                                                className="opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10 transition-all"
+                                                title="Revogar acesso"
+                                            >
+                                                {removing === user.email ? (
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                ) : (
+                                                    <Trash2 className="w-4 h-4" />
+                                                )}
+                                            </Button>
+                                        </div>
                                     )}
                                 </div>
                             ))}

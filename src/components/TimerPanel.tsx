@@ -14,6 +14,7 @@ interface TimerPanelProps {
   matchEnded: boolean;
   matchWinner: 'chung' | 'hong' | null;
   gamepadConnected: boolean;
+  gamepadCount?: number;
   isSubtractMode: boolean;
   roundResults: Array<'chung' | 'hong' | null>;
   winnerName?: string;
@@ -48,6 +49,7 @@ export const TimerPanel = ({
   matchEnded,
   matchWinner,
   gamepadConnected,
+  gamepadCount = 0,
   isSubtractMode,
   roundResults,
   winnerName,
@@ -363,7 +365,9 @@ export const TimerPanel = ({
                       >
                         <Gamepad2 className="w-4 h-4" />
                         {gamepadConnected && (
-                          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-timer rounded-full" />
+                          <span className="absolute -top-1 -right-1 min-w-[16px] h-4 flex items-center justify-center bg-timer text-black text-[10px] font-bold rounded-full px-0.5">
+                            {gamepadCount}
+                          </span>
                         )}
                       </button>
                     </motion.div>

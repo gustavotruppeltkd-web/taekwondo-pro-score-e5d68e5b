@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { Minus, CopyPlus } from "lucide-react";
+import { Minus, CopyPlus, MinusSquare } from "lucide-react";
 import { PointHistorySidebar, PointEntry } from "./PointHistorySidebar";
 
 interface FighterPanelProps {
@@ -17,6 +17,7 @@ interface FighterPanelProps {
   onAddGamjeom: () => void;
   onDoubleLastPoint: () => void;
   canDouble?: boolean;
+  canUndoDouble?: boolean;
   animateScore?: boolean;
   disabled?: boolean;
 }
@@ -36,6 +37,7 @@ export const FighterPanel = ({
   isWinningByTiebreaker = false,
   onDoubleLastPoint,
   canDouble = false,
+  canUndoDouble = false,
   animateScore = false,
   disabled = false,
 }: FighterPanelProps) => {
@@ -139,15 +141,17 @@ export const FighterPanel = ({
           ))}
           <button
             onClick={onDoubleLastPoint}
-            disabled={disabled || isSubtractMode || !canDouble}
+            disabled={disabled || (isSubtractMode ? !canUndoDouble : !canDouble)}
             className={cn(
               "px-4 py-2 md:px-6 md:py-3 rounded-lg font-bold text-lg md:text-xl",
               "transition-all duration-200 active:scale-95",
               "disabled:opacity-50 disabled:cursor-not-allowed",
-              "bg-white/20 hover:bg-white/30 text-white border-2 border-white/30"
+              isSubtractMode && canUndoDouble
+                ? "bg-gamjeom/80 hover:bg-gamjeom text-black border-2 border-gamjeom"
+                : "bg-white/20 hover:bg-white/30 text-white border-2 border-white/30"
             )}
           >
-            <CopyPlus className="w-5 h-5 md:w-6 md:h-6" />
+            {isSubtractMode ? <MinusSquare className="w-5 h-5 md:w-6 md:h-6" /> : <CopyPlus className="w-5 h-5 md:w-6 md:h-6" />}
           </button>
           <button
             onClick={onAddGamjeom}
