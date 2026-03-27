@@ -31,13 +31,36 @@ const Login = () => {
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        const normalizedEmail = email.trim().toLowerCase();
+        if (!normalizedEmail) return;
+
         setLoading(true);
 
         try {
+            // Verifica se o e-mail está na lista de autorizados
+            const { data: allowedUsers, error: checkError } = await supabase
+                .from('allowed_users')
+                .select('email')
+                .eq('email', normalizedEmail)
+                .single();
+
+            if (checkError || !allowedUsers) {
+                toast({
+                    variant: "destructive",
+                    title: "Acesso Negado",
+                    description: "Este e-mail não está autorizado para acessar o sistema.",
+                });
+                setLoading(false);
+                return;
+            }
+
+            // Se estiver autorizado, envia o magic link
             const { error } = await supabase.auth.signInWithOtp({
-                email,
+                email: normalizedEmail,
                 options: {
-                    emailRedirectTo: `${window.location.origin}/auth/callback`,
+                    emailRedirectTo: 'https://tkdproscore.com.br/app',
+                    shouldCreateUser: true,
                 },
             });
 
@@ -54,7 +77,7 @@ const Login = () => {
             toast({
                 variant: "destructive",
                 title: "Erro ao enviar link",
-                description: error.message,
+                description: error.message || "Ocorreu um erro inesperado.",
             });
         } finally {
             setLoading(false);

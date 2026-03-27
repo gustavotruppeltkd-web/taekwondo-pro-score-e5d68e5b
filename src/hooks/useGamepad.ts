@@ -85,7 +85,7 @@ const CONSENSUS_ACTIONS: Set<keyof GamepadMapping> = new Set([
   'hongPlus1', 'hongPlus2', 'hongPlus3', 'hongDouble',
 ]);
 
-const CONSENSUS_WINDOW_MS = 1500; // 1.5 seconds
+const CONSENSUS_WINDOW_MS = 2000; // 2 seconds
 
 interface PendingVote {
   action: keyof GamepadMapping;
@@ -97,47 +97,64 @@ interface PendingVote {
 export const useGamepad = (mapping: GamepadMapping, actions: GamepadActions) => {
   const [connectedCount, setConnectedCount] = useState(0);
   const [gamepadNames, setGamepadNames] = useState<string[]>([]);
-  // Keep per-gamepad pressed button tracking
+
+  // Use refs to store latest values without causing re-renders in the poll loop
+  const mappingRef = useRef(mapping);
+  const actionsRef = useRef(actions);
   const pressedButtonsMap = useRef<Map<number, Set<number>>>(new Map());
   const animationFrameRef = useRef<number>();
   const pendingVotes = useRef<PendingVote[]>([]);
+  const connectedCountRef = useRef(0);
+  const gamepadNamesRef = useRef<string[]>([]);
 
-  const actionMap = useCallback((): Record<keyof GamepadMapping, (() => void) | undefined> => ({
-    chungPlus1: actions.onChungPlus1,
-    chungPlus2: actions.onChungPlus2,
-    chungPlus3: actions.onChungPlus3,
-    chungGamjeom: actions.onChungGamjeom,
-    chungDouble: actions.onChungDouble,
-    hongPlus1: actions.onHongPlus1,
-    hongPlus2: actions.onHongPlus2,
-    hongPlus3: actions.onHongPlus3,
-    hongGamjeom: actions.onHongGamjeom,
-    hongDouble: actions.onHongDouble,
-    startPause: actions.onStartPause,
-    resetRound: actions.onResetRound,
-    subtractMode: actions.onSubtractMode,
-    decisionChung: actions.onDecisionChung,
-    decisionHong: actions.onDecisionHong,
-    resetMatch: actions.onResetMatch,
-  }), [actions]);
+  // Keep refs in sync with props (no re-render triggered)
+  useEffect(() => {
+    mappingRef.current = mapping;
+  }, [mapping]);
 
-  const resolveAction = useCallback((actionKey: keyof GamepadMapping) => {
-    const map = actionMap();
-    const action = map[actionKey];
-    if (action) {
-      action();
-    }
-  }, [actionMap]);
+  useEffect(() => {
+    actionsRef.current = actions;
+  }, [actions]);
 
+  // Stable function: find which action a button maps to
   const findActionForButton = useCallback((buttonIndex: number): keyof GamepadMapping | null => {
-    for (const [key, value] of Object.entries(mapping)) {
+    const currentMapping = mappingRef.current;
+    for (const [key, value] of Object.entries(currentMapping)) {
       if (value === buttonIndex) {
         return key as keyof GamepadMapping;
       }
     }
     return null;
-  }, [mapping]);
+  }, []);
 
+  // Stable function: execute an action
+  const resolveAction = useCallback((actionKey: keyof GamepadMapping) => {
+    const currentActions = actionsRef.current;
+    const actionMap: Record<keyof GamepadMapping, (() => void) | undefined> = {
+      chungPlus1: currentActions.onChungPlus1,
+      chungPlus2: currentActions.onChungPlus2,
+      chungPlus3: currentActions.onChungPlus3,
+      chungGamjeom: currentActions.onChungGamjeom,
+      chungDouble: currentActions.onChungDouble,
+      hongPlus1: currentActions.onHongPlus1,
+      hongPlus2: currentActions.onHongPlus2,
+      hongPlus3: currentActions.onHongPlus3,
+      hongGamjeom: currentActions.onHongGamjeom,
+      hongDouble: currentActions.onHongDouble,
+      startPause: currentActions.onStartPause,
+      resetRound: currentActions.onResetRound,
+      subtractMode: currentActions.onSubtractMode,
+      decisionChung: currentActions.onDecisionChung,
+      decisionHong: currentActions.onDecisionHong,
+      resetMatch: currentActions.onResetMatch,
+    };
+    const action = actionMap[actionKey];
+    if (action) {
+      action();
+    }
+  }, []);
+
+  // Stable function: handle a button press with consensus logic
   const handleButtonPress = useCallback((buttonIndex: number, gamepadIndex: number, totalConnected: number) => {
     const actionKey = findActionForButton(buttonIndex);
     if (!actionKey) return;
@@ -185,52 +202,64 @@ export const useGamepad = (mapping: GamepadMapping, actions: GamepadActions) => 
     }
   }, [findActionForButton, resolveAction]);
 
-  const pollGamepad = useCallback(() => {
-    const gamepads = navigator.getGamepads();
-    const names: string[] = [];
-    let count = 0;
-
-    for (let i = 0; i < gamepads.length; i++) {
-      const gamepad = gamepads[i];
-      if (!gamepad) continue;
-
-      count++;
-      names.push(gamepad.id);
-
-      // Initialize pressed map for this gamepad if needed
-      if (!pressedButtonsMap.current.has(i)) {
-        pressedButtonsMap.current.set(i, new Set());
-      }
-      const pressed = pressedButtonsMap.current.get(i)!;
-
-      gamepad.buttons.forEach((button, index) => {
-        if (button.pressed && !pressed.has(index)) {
-          pressed.add(index);
-          handleButtonPress(index, i, count);
-        } else if (!button.pressed && pressed.has(index)) {
-          pressed.delete(index);
-        }
-      });
-    }
-
-    // Clean up disconnected gamepads
-    for (const [idx] of pressedButtonsMap.current) {
-      if (!gamepads[idx]) {
-        pressedButtonsMap.current.delete(idx);
-      }
-    }
-
-    setConnectedCount(count);
-    if (count > 0 && names.length > 0) {
-      setGamepadNames(names);
-    } else {
-      setGamepadNames([]);
-    }
-
-    animationFrameRef.current = requestAnimationFrame(pollGamepad);
-  }, [handleButtonPress]);
-
+  // Single stable effect — poll loop never restarts due to prop/state changes
   useEffect(() => {
+    const pollGamepad = () => {
+      const gamepads = navigator.getGamepads();
+      const names: string[] = [];
+
+      // FIRST PASS: count all connected gamepads
+      let count = 0;
+      for (let i = 0; i < gamepads.length; i++) {
+        if (gamepads[i]) {
+          count++;
+          names.push(gamepads[i]!.id);
+        }
+      }
+
+      // SECOND PASS: process buttons with correct totalConnected
+      for (let i = 0; i < gamepads.length; i++) {
+        const gamepad = gamepads[i];
+        if (!gamepad) continue;
+
+        if (!pressedButtonsMap.current.has(i)) {
+          pressedButtonsMap.current.set(i, new Set());
+        }
+        const pressed = pressedButtonsMap.current.get(i)!;
+
+        gamepad.buttons.forEach((button, index) => {
+          if (button.pressed && !pressed.has(index)) {
+            pressed.add(index);
+            handleButtonPress(index, i, count);
+          } else if (!button.pressed && pressed.has(index)) {
+            pressed.delete(index);
+          }
+        });
+      }
+
+      // Clean up disconnected gamepads
+      for (const [idx] of pressedButtonsMap.current) {
+        if (!gamepads[idx]) {
+          pressedButtonsMap.current.delete(idx);
+        }
+      }
+
+      // Only update React state when values actually change to avoid unnecessary re-renders
+      if (count !== connectedCountRef.current) {
+        connectedCountRef.current = count;
+        setConnectedCount(count);
+      }
+
+      const namesKey = names.join('||');
+      const prevNamesKey = gamepadNamesRef.current.join('||');
+      if (namesKey !== prevNamesKey) {
+        gamepadNamesRef.current = names;
+        setGamepadNames(names);
+      }
+
+      animationFrameRef.current = requestAnimationFrame(pollGamepad);
+    };
+
     const handleGamepadConnected = (e: GamepadEvent) => {
       console.log('Gamepad connected:', e.gamepad.id, '(index:', e.gamepad.index, ')');
     };
@@ -255,7 +284,7 @@ export const useGamepad = (mapping: GamepadMapping, actions: GamepadActions) => 
       pendingVotes.current.forEach((v) => window.clearTimeout(v.timeoutId));
       pendingVotes.current = [];
     };
-  }, [pollGamepad]);
+  }, [handleButtonPress]);
 
   return {
     connected: connectedCount > 0,
