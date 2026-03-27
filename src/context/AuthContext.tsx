@@ -6,6 +6,8 @@ import { supabase } from "@/lib/supabase";
 interface AuthContextType {
     session: Session | null;
     user: User | null;
+    userRole: string | null;
+    isAdmin: boolean;
     loading: boolean;
     signOut: () => Promise<void>;
 }
@@ -15,16 +17,18 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [session, setSession] = useState<Session | null>(null);
     const [user, setUser] = useState<User | null>(null);
+    const [userRole, setUserRole] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         // Check active sessions and sets the user
         supabase.auth.getSession().then(({ data: { session } }) => {
             if (session?.user?.email) {
-                checkWhitelist(session.user.email).then((allowed) => {
+                checkWhitelist(session.user.email).then(({ allowed, role }) => {
                     if (allowed) {
                         setSession(session);
                         setUser(session.user);
+                        setUserRole(role);
                     } else {
                         signOut();
                     }
@@ -40,10 +44,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             data: { subscription },
         } = supabase.auth.onAuthStateChange((_event, session) => {
             if (session?.user?.email) {
-                checkWhitelist(session.user.email).then((allowed) => {
+                checkWhitelist(session.user.email).then(({ allowed, role }) => {
                     if (allowed) {
                         setSession(session);
                         setUser(session.user);
+                        setUserRole(role);
                     } else {
                         signOut();
                     }
@@ -52,6 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             } else {
                 setSession(null);
                 setUser(null);
+                setUserRole(null);
                 setLoading(false);
             }
         });
@@ -62,15 +68,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const checkWhitelist = async (email: string) => {
         const { data, error } = await supabase
             .from('allowed_users')
-            .select('email')
+            .select('email, role')
             .eq('email', email)
             .single();
 
         if (error || !data) {
             console.warn(`Access denied for ${email}: Not in whitelist.`);
-            return false;
+            return { allowed: false, role: null };
         }
-        return true;
+        return { allowed: true, role: data.role };
     };
 
     const signOut = async () => {
@@ -78,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <AuthContext.Provider value={{ session, user, loading, signOut }}>
+        <AuthContext.Provider value={{ session, user, userRole, isAdmin: userRole === 'admin', loading, signOut }}>
             {!loading && children}
         </AuthContext.Provider>
     );

@@ -6,10 +6,11 @@ import { useAuth } from "@/context/AuthContext";
 interface AuthGuardProps {
     children: React.ReactNode;
     requireAuth?: boolean;
+    requireAdmin?: boolean;
 }
 
-export const AuthGuard = ({ children, requireAuth = true }: AuthGuardProps) => {
-    const { session, loading } = useAuth();
+export const AuthGuard = ({ children, requireAuth = true, requireAdmin = false }: AuthGuardProps) => {
+    const { session, loading, isAdmin } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -21,9 +22,12 @@ export const AuthGuard = ({ children, requireAuth = true }: AuthGuardProps) => {
             navigate("/login", { replace: true, state: { from: location } });
         } else if (!requireAuth && session) {
             // Redirect authenticated users away from public auth pages (like login)
-            navigate("/app", { replace: true });
+            navigate("/", { replace: true });
+        } else if (requireAuth && session && requireAdmin && !isAdmin) {
+            // Redirect authenticated non-admins away from admin pages
+            navigate("/", { replace: true });
         }
-    }, [session, loading, requireAuth, navigate, location]);
+    }, [session, loading, requireAuth, requireAdmin, isAdmin, navigate, location]);
 
     if (loading) {
         return (
@@ -34,7 +38,7 @@ export const AuthGuard = ({ children, requireAuth = true }: AuthGuardProps) => {
     }
 
     // Prevent flash of content while redirecting
-    if ((requireAuth && !session) || (!requireAuth && session)) {
+    if ((requireAuth && !session) || (!requireAuth && session) || (requireAuth && session && requireAdmin && !isAdmin)) {
         return null;
     }
 

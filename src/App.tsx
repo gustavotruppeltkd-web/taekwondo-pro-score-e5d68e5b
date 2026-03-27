@@ -43,11 +43,11 @@ const App = () => (
 
             <Route path="/auth/callback" element={<AuthCallback />} />
 
-            {/* Protected Routes (only accessible if logged in) */}
+            {/* Protected Routes (only accessible if logged in AS ADMIN) */}
             <Route
               path="/app"
               element={
-                <AuthGuard requireAuth={true}>
+                <AuthGuard requireAuth={true} requireAdmin={true}>
                   <Dashboard />
                 </AuthGuard>
               }

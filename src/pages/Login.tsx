@@ -41,7 +41,7 @@ const Login = () => {
             // Verifica se o e-mail está na lista de autorizados
             const { data: allowedUsers, error: checkError } = await supabase
                 .from('allowed_users')
-                .select('email')
+                .select('email, role')
                 .eq('email', normalizedEmail)
                 .single();
 
@@ -55,11 +55,14 @@ const Login = () => {
                 return;
             }
 
+            const isAdmin = allowedUsers.role === 'admin';
+            const redirectPath = isAdmin ? '/app' : '/';
+
             // Se estiver autorizado, envia o magic link
             const { error } = await supabase.auth.signInWithOtp({
                 email: normalizedEmail,
                 options: {
-                    emailRedirectTo: 'https://tkdproscore.com.br/app',
+                    emailRedirectTo: `https://tkdproscore.com.br${redirectPath}`,
                     shouldCreateUser: true,
                 },
             });
