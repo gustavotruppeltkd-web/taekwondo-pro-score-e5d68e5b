@@ -1,6 +1,6 @@
 import { useState, useCallback, useLayoutEffect, useMemo, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { RotateCcw, Settings, Gamepad2, Minus, ChevronUp, ChevronDown, Undo2 } from "lucide-react";
+import { RotateCcw, Settings, Gamepad2, Minus, ChevronUp, ChevronDown, Undo2, FileDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Rnd } from "react-rnd";
 import { RoundIndicator } from "./RoundIndicator";
@@ -26,6 +26,7 @@ interface TimerPanelProps {
   onToggleSubtractMode: () => void;
   onAdjustTime: (seconds: number) => void;
   onRevertToPreviousRound?: () => void;
+  onDownloadReport?: () => void;
 }
 
 const formatTime = (seconds: number): string => {
@@ -61,6 +62,7 @@ export const TimerPanel = ({
   onToggleSubtractMode,
   onAdjustTime,
   onRevertToPreviousRound,
+  onDownloadReport,
 }: TimerPanelProps) => {
   const [isCompact, setIsCompact] = useState(false);
   const boundsRef = useRef<HTMLDivElement | null>(null);
@@ -250,6 +252,23 @@ export const TimerPanel = ({
                   {formatTime(timeRemaining)}
                 </div>
               </button>
+
+              {/* Download PDF - only at match end, so the live layout stays clean */}
+              {matchEnded && onDownloadReport && (
+                <button
+                  onClick={onDownloadReport}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1 mb-1 rounded-full",
+                    "bg-timer/15 hover:bg-timer/25 text-timer",
+                    "text-xs font-semibold uppercase tracking-wider",
+                    "transition-all duration-200 active:scale-95"
+                  )}
+                  title="Baixar PDF da luta"
+                >
+                  <FileDown className="w-3.5 h-3.5" />
+                  PDF
+                </button>
+              )}
 
               {/* Bottom Controls - Compact row */}
               <div className="flex items-center justify-center gap-1 mt-auto pb-1">

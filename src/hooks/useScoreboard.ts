@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { playRoundStartBeep, playRoundEndBeep, playTenSecondWarning, playScoreBeep, playFaultBeep } from './useAudio';
 import { PointEntry } from '@/components/PointHistorySidebar';
+import type { MatchEvent } from '@/lib/matchReport';
 
 export interface ScoreboardSettings {
   roundTime: number;
@@ -89,6 +90,31 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
 
   const timerRef = useRef<number | null>(null);
   const tenSecondAlertRef = useRef(false);
+
+  // Always-fresh mirror of state, so we can read the current round/clock when
+  // logging an event without adding deps that would recreate the callbacks
+  // every second (the timer ticks state each second).
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
+  // Full-match event log. Survives per-round resets and is only cleared when a
+  // new match starts (resetMatch). Kept in a ref: it never needs to re-render,
+  // and is read only when the user downloads the PDF. Zero live-memory cost.
+  const matchLogRef = useRef<MatchEvent[]>([]);
+
+  const logEvent = useCallback(
+    (fighter: 'chung' | 'hong', value: number, type: 'score' | 'gamjeom', isDouble?: boolean) => {
+      matchLogRef.current.push({
+        fighter,
+        value,
+        type,
+        ...(isDouble ? { isDouble: true } : {}),
+        round: stateRef.current.currentRound,
+        clock: stateRef.current.timeRemaining,
+      });
+    },
+    []
+  );
 
   // Toggle subtract mode
   const toggleSubtractMode = useCallback(() => {
@@ -473,6 +499,19 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
   const doubleLastPoint = useCallback((fighter: 'chung' | 'hong') => {
     if (state.matchEnded || state.isResting) return;
 
+    // Log the exact score delta for the report, mirroring the reducer's choice.
+    {
+      const key = fighter === 'chung' ? 'chungHistory' : 'hongHistory';
+      const hist = stateRef.current[key];
+      if (stateRef.current.isSubtractMode) {
+        const lastDouble = [...hist].reverse().find(e => e.isDouble);
+        if (lastDouble) logEvent(fighter, -lastDouble.value, 'score', true);
+      } else {
+        const lastScore = [...hist].reverse().find(e => e.type === 'score' && e.value > 0);
+        if (lastScore) logEvent(fighter, lastScore.value, 'score', true);
+      }
+    }
+
     setState(prev => {
       const historyKey = fighter === 'chung' ? 'chungHistory' : 'hongHistory';
       const history = prev[historyKey];
@@ -520,7 +559,7 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
       };
       return checkImmediateVictory(newState);
     });
-  }, [checkImmediateVictory, state.matchEnded, state.isResting, state.isSubtractMode]);
+  }, [checkImmediateVictory, state.matchEnded, state.isResting, state.isSubtractMode, logEvent]);
 
   // Scoring functions with subtract mode support
   const addPoints = useCallback((fighter: 'chung' | 'hong', points: number) => {
@@ -528,6 +567,7 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
 
     const actualPoints = state.isSubtractMode ? -points : points;
     playScoreBeep();
+    logEvent(fighter, actualPoints, 'score');
 
     setState(prev => {
       const newScore = Math.max(0, prev[fighter].score + actualPoints);
@@ -544,11 +584,12 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
       };
       return checkImmediateVictory(newState);
     });
-  }, [checkImmediateVictory, state.matchEnded, state.isResting, state.isSubtractMode]);
+  }, [checkImmediateVictory, state.matchEnded, state.isResting, state.isSubtractMode, logEvent]);
 
   const addGamjeom = useCallback((fighter: 'chung' | 'hong') => {
     if (state.matchEnded || state.isResting) return;
     playFaultBeep();
+    logEvent(fighter, state.isSubtractMode ? -1 : 1, 'gamjeom');
 
     setState(prev => {
       const opponent = fighter === 'chung' ? 'hong' : 'chung';
@@ -590,7 +631,7 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
       };
       return checkImmediateVictory(newState);
     });
-  }, [checkImmediateVictory, state.matchEnded, state.isResting]);
+  }, [checkImmediateVictory, state.matchEnded, state.isResting, state.isSubtractMode, logEvent]);
 
   // Timer control
   const toggleTimer = useCallback(() => {
@@ -622,6 +663,7 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
 
   const resetMatch = useCallback(() => {
     tenSecondAlertRef.current = false;
+    matchLogRef.current = []; // discard the finished match's report data — keeps memory light
     setState({
       chung: { ...initialFighterScore },
       hong: { ...initialFighterScore },
@@ -745,6 +787,7 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
     setSubtractMode,
     adjustTime,
     revertToPreviousRound,
+    matchLog: matchLogRef,
     canDouble: (fighter: 'chung' | 'hong') => {
       const history = state[fighter === 'chung' ? 'chungHistory' : 'hongHistory'];
       if (history.length === 0) return false;

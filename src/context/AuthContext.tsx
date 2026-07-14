@@ -21,48 +21,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Check active sessions and sets the user
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            if (session?.user?.email) {
-                checkWhitelist(session.user.email).then(({ allowed, role }) => {
+        let mounted = true;
+
+        // Safety net: if the backend (Supabase) is unreachable or slow, never
+        // leave the app hanging on a blank screen. Always resolve loading.
+        const safetyTimeout = setTimeout(() => {
+            if (mounted) setLoading(false);
+        }, 8000);
+
+        // Resolves a session (whitelist check included) and always clears loading,
+        // even if the network call fails or hangs.
+        const resolveSession = async (session: Session | null) => {
+            try {
+                if (session?.user?.email) {
+                    const { allowed, role } = await checkWhitelist(session.user.email);
+                    if (!mounted) return;
                     if (allowed) {
                         setSession(session);
                         setUser(session.user);
                         setUserRole(role);
                     } else {
-                        signOut();
+                        await signOut();
                     }
-                    setLoading(false);
-                });
-            } else {
-                setLoading(false);
+                } else {
+                    setSession(null);
+                    setUser(null);
+                    setUserRole(null);
+                }
+            } catch (err) {
+                console.error("Auth initialization failed:", err);
+            } finally {
+                if (mounted) setLoading(false);
             }
-        });
+        };
+
+        // Check active session and set the user
+        supabase.auth
+            .getSession()
+            .then(({ data: { session } }) => resolveSession(session))
+            .catch((err) => {
+                console.error("getSession failed:", err);
+                if (mounted) setLoading(false);
+            });
 
         // Listen for changes on auth state (logged in, signed out, etc.)
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange((_event, session) => {
-            if (session?.user?.email) {
-                checkWhitelist(session.user.email).then(({ allowed, role }) => {
-                    if (allowed) {
-                        setSession(session);
-                        setUser(session.user);
-                        setUserRole(role);
-                    } else {
-                        signOut();
-                    }
-                    setLoading(false);
-                });
-            } else {
-                setSession(null);
-                setUser(null);
-                setUserRole(null);
-                setLoading(false);
-            }
+            resolveSession(session);
         });
 
-        return () => subscription.unsubscribe();
+        return () => {
+            mounted = false;
+            clearTimeout(safetyTimeout);
+            subscription.unsubscribe();
+        };
     }, []);
 
     const checkWhitelist = async (email: string) => {

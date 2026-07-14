@@ -7,6 +7,7 @@ import { RefereeDecisionModal } from "./RefereeDecisionModal";
 import { RoundWinnerBanner } from "./RoundWinnerBanner";
 import { useScoreboard } from "@/hooks/useScoreboard";
 import { useGamepad, GamepadMapping, defaultMapping } from "@/hooks/useGamepad";
+import { resolveFighterName } from "@/lib/fighterNames";
 
 export const Scoreboard = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -30,7 +31,25 @@ export const Scoreboard = () => {
     setSubtractMode,
     adjustTime,
     revertToPreviousRound,
+    matchLog,
   } = useScoreboard();
+
+  // Resolved display names (fall back to "Atleta Azul" / "Atleta Vermelho").
+  const chungName = resolveFighterName(settings.chungName, 'chung');
+  const hongName = resolveFighterName(settings.hongName, 'hong');
+
+  const handleDownloadReport = useCallback(async () => {
+    // Loaded on demand so jsPDF (and its html2canvas/dompurify deps) never
+    // weigh down the live scoreboard bundle — only fetched when the PDF is generated.
+    const { generateMatchReport } = await import("@/lib/matchReportPdf");
+    generateMatchReport({
+      log: matchLog.current,
+      chungName,
+      hongName,
+      winner: state.matchWinner,
+      roundResults: state.roundResults,
+    });
+  }, [matchLog, chungName, hongName, state.matchWinner, state.roundResults]);
 
   // Compute tiebreaker winner for live display
   const getTiebreakerWinner = useCallback((): 'chung' | 'hong' | null => {
@@ -90,8 +109,8 @@ export const Scoreboard = () => {
   const roundsToWin = Math.ceil(settings.totalRounds / 2);
 
   const getWinnerName = () => {
-    if (state.roundWinner === 'chung') return settings.chungName;
-    if (state.roundWinner === 'hong') return settings.hongName;
+    if (state.roundWinner === 'chung') return chungName;
+    if (state.roundWinner === 'hong') return hongName;
     return '';
   };
 
@@ -102,7 +121,7 @@ export const Scoreboard = () => {
       {/* Chung (Blue) Side */}
       <FighterPanel
         side="chung"
-        name={settings.chungName}
+        name={chungName}
         score={state.chung.score}
         opponentScore={state.hong.score}
         gamjeom={state.chung.gamjeom}
@@ -122,7 +141,7 @@ export const Scoreboard = () => {
       {/* Hong (Red) Side */}
       <FighterPanel
         side="hong"
-        name={settings.hongName}
+        name={hongName}
         score={state.hong.score}
         opponentScore={state.chung.score}
         gamjeom={state.hong.gamjeom}
@@ -152,7 +171,7 @@ export const Scoreboard = () => {
         gamepadCount={gamepadCount}
         isSubtractMode={state.isSubtractMode}
         roundResults={state.roundResults}
-        winnerName={state.matchWinner === 'chung' ? settings.chungName : settings.hongName}
+        winnerName={state.matchWinner === 'chung' ? chungName : hongName}
         canRevertRound={state.previousRoundSnapshot !== null}
         onToggleTimer={toggleTimer}
         onResetRound={resetRound}
@@ -161,6 +180,7 @@ export const Scoreboard = () => {
         onToggleSubtractMode={toggleSubtractMode}
         onAdjustTime={adjustTime}
         onRevertToPreviousRound={revertToPreviousRound}
+        onDownloadReport={handleDownloadReport}
       />
 
       {/* Round Winner Banner */}
@@ -175,8 +195,8 @@ export const Scoreboard = () => {
       {/* Referee Decision Modal */}
       <RefereeDecisionModal
         open={state.showDecisionModal}
-        chungName={settings.chungName}
-        hongName={settings.hongName}
+        chungName={chungName}
+        hongName={hongName}
         onDecision={handleRefereeDecision}
       />
 
