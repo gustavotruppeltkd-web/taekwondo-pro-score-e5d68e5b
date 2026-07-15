@@ -26,13 +26,9 @@ export const PointHistorySidebar = ({ side, history }: PointHistorySidebarProps)
         <div
           key={entry.timestamp}
           className={cn(
-            "flex items-center justify-center rounded-lg p-1.5 md:p-2",
-            "backdrop-blur-sm shadow-lg transition-all",
-            entry.type === 'gamjeom'
-              ? "bg-gamjeom/80 text-black border border-gamjeom"
-              : entry.isDouble
-                ? "bg-amber-400/90 text-black border border-amber-500"
-                : "bg-white/20 text-white border border-white/30",
+            "flex items-center justify-center rounded-xl overflow-hidden bg-white",
+            "shadow-lg ring-1 ring-black/10 transition-all",
+            "w-10 h-10 md:w-12 md:h-12",
             index === 0 && "animate-pulse-once"
           )}
           style={{
@@ -41,10 +37,11 @@ export const PointHistorySidebar = ({ side, history }: PointHistorySidebarProps)
           }}
         >
           <PointIcon
+            side={side}
             value={entry.value}
             type={entry.type}
             isDouble={entry.isDouble}
-            className="w-5 h-5 md:w-6 md:h-6"
+            className="w-full h-full p-1"
           />
         </div>
       ))}
