@@ -18,7 +18,9 @@ interface PointHistorySidebarProps {
 
 export const PointHistorySidebar = ({ side, history }: PointHistorySidebarProps) => {
   const isChung = side === 'chung';
-  const lastFive = history.slice(-5).reverse();
+  // The offender's own gam-jeom is not shown here — the falta icon only appears
+  // for the opponent, on the point they gained from it (a fromGamjeom score entry).
+  const lastFive = history.filter(e => e.type !== 'gamjeom').slice(-5).reverse();
 
   return (
     <div className={cn(
