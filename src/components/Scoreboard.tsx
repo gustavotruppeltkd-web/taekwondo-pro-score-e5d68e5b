@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Menu, X, Minus, RotateCcw, Undo2, Settings, Gamepad2 } from "lucide-react";
+import { Menu, X, Minus, RotateCcw, Undo2, Settings, Gamepad2, FileDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { FighterPanel } from "./FighterPanel";
@@ -201,8 +201,8 @@ export const Scoreboard = () => {
               style={{ transformOrigin: "bottom center" }}
               className="flex items-center gap-1.5 rounded-full bg-neutral-900/95 border border-white/10 px-2.5 py-2 shadow-2xl"
             >
-              <button onClick={() => adjustTime(-1)} className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-200/90 text-black hover:bg-amber-200 active:scale-95 transition">-1s</button>
-              <button onClick={() => adjustTime(1)} className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-200/90 text-black hover:bg-amber-200 active:scale-95 transition">+1s</button>
+              <button onClick={() => adjustTime(-1)} className="h-9 px-3 rounded-full text-xs font-bold bg-white/10 hover:bg-white/20 text-white active:scale-95 transition">-1s</button>
+              <button onClick={() => adjustTime(1)} className="h-9 px-3 rounded-full text-xs font-bold bg-white/10 hover:bg-white/20 text-white active:scale-95 transition">+1s</button>
               <button onClick={resetRound} title="Reiniciar round" className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center active:scale-95 transition">
                 <RotateCcw className="w-4 h-4" />
               </button>
@@ -224,6 +224,9 @@ export const Scoreboard = () => {
                     {gamepadCount}
                   </span>
                 )}
+              </button>
+              <button onClick={handleDownloadReport} title="Baixar PDF da luta" className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center active:scale-95 transition">
+                <FileDown className="w-4 h-4" />
               </button>
             </motion.div>
           )}

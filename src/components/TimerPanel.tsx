@@ -252,23 +252,6 @@ export const TimerPanel = ({
                 </div>
               </button>
 
-              {/* Download PDF - only at match end, so the live layout stays clean */}
-              {matchEnded && onDownloadReport && (
-                <button
-                  onClick={onDownloadReport}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-1 mb-1 rounded-full",
-                    "bg-timer/15 hover:bg-timer/25 text-timer",
-                    "text-xs font-semibold uppercase tracking-wider",
-                    "transition-all duration-200 active:scale-95"
-                  )}
-                  title="Baixar PDF da luta"
-                >
-                  <FileDown className="w-3.5 h-3.5" />
-                  PDF
-                </button>
-              )}
-
             </div>
           </div>
         </Rnd>
