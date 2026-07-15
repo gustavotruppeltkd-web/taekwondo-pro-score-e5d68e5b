@@ -6,6 +6,9 @@ export interface PointEntry {
   type: 'score' | 'gamjeom';
   timestamp: number;
   isDouble?: boolean;
+  /** True when this +1 was awarded because the opponent committed a gam-jeom
+   *  (so it shows the falta icon, not a soco). */
+  fromGamjeom?: boolean;
 }
 
 interface PointHistorySidebarProps {
@@ -41,6 +44,7 @@ export const PointHistorySidebar = ({ side, history }: PointHistorySidebarProps)
             value={entry.value}
             type={entry.type}
             isDouble={entry.isDouble}
+            fromGamjeom={entry.fromGamjeom}
             className="w-full h-full p-1"
           />
         </div>

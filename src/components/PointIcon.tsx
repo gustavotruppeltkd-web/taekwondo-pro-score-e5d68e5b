@@ -25,6 +25,8 @@ interface PointIconProps {
   value: number;
   type: "score" | "gamjeom";
   isDouble?: boolean;
+  /** Point awarded from the opponent's gam-jeom — shows the falta icon, not soco. */
+  fromGamjeom?: boolean;
   className?: string;
 }
 
@@ -47,8 +49,8 @@ const ICONS = {
   },
 } as const;
 
-const pickKey = (value: number, type: "score" | "gamjeom", isDouble?: boolean) => {
-  if (type === "gamjeom") return "falta" as const;
+const pickKey = (value: number, type: "score" | "gamjeom", isDouble?: boolean, fromGamjeom?: boolean) => {
+  if (type === "gamjeom" || fromGamjeom) return "falta" as const;
   if (isDouble && value >= 3) return "giro-capacete" as const;
   if (isDouble && value === 2) return "giro-colete" as const;
   if (value >= 3) return "capacete" as const;
@@ -56,7 +58,7 @@ const pickKey = (value: number, type: "score" | "gamjeom", isDouble?: boolean) =
   return "soco" as const;
 };
 
-export const PointIcon = ({ side, value, type, isDouble, className }: PointIconProps) => {
-  const src = ICONS[side][pickKey(value, type, isDouble)];
+export const PointIcon = ({ side, value, type, isDouble, fromGamjeom, className }: PointIconProps) => {
+  const src = ICONS[side][pickKey(value, type, isDouble, fromGamjeom)];
   return <img src={src} alt="" draggable={false} className={cn("object-contain", className)} />;
 };

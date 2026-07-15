@@ -626,7 +626,7 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
         ],
         [opponentHistoryKey]: [
           ...prev[opponentHistoryKey],
-          { value: 1, type: 'score' as const, timestamp: Date.now() }
+          { value: 1, type: 'score' as const, timestamp: Date.now(), fromGamjeom: true }
         ],
       };
       return checkImmediateVictory(newState);
