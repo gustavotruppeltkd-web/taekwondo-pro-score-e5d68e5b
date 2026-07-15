@@ -564,23 +564,38 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
   // Scoring functions with subtract mode support
   const addPoints = useCallback((fighter: 'chung' | 'hong', points: number) => {
     if (state.matchEnded || state.isResting) return;
+    const historyKey = fighter === 'chung' ? 'chungHistory' : 'hongHistory';
 
-    const actualPoints = state.isSubtractMode ? -points : points;
+    // Correction mode: ERASE the most recent scored point of this value from the
+    // history (and subtract it from the score), instead of adding a negative
+    // entry. This keeps the lateral history clean and lets the tiebreaker
+    // recount correctly (a removed point no longer influences it).
+    if (state.isSubtractMode) {
+      const history = stateRef.current[historyKey];
+      const rIdx = [...history].reverse().findIndex(e => e.type === 'score' && e.value === points);
+      if (rIdx === -1) return; // nothing matching to remove
+      const removeIndex = history.length - 1 - rIdx;
+      playScoreBeep();
+      logEvent(fighter, -points, 'score');
+      setState(prev => ({
+        ...prev,
+        [fighter]: { ...prev[fighter], score: Math.max(0, prev[fighter].score - points) },
+        [historyKey]: prev[historyKey].filter((_, i) => i !== removeIndex),
+      }));
+      return;
+    }
+
+    // Normal: add the point.
     playScoreBeep();
-    logEvent(fighter, actualPoints, 'score');
-
+    logEvent(fighter, points, 'score');
     setState(prev => {
-      const newScore = Math.max(0, prev[fighter].score + actualPoints);
-      const historyKey = fighter === 'chung' ? 'chungHistory' : 'hongHistory';
-      const newHistory = [
-        ...prev[historyKey],
-        { value: actualPoints, type: 'score' as const, timestamp: Date.now() }
-      ];
-
       const newState = {
         ...prev,
-        [fighter]: { ...prev[fighter], score: newScore },
-        [historyKey]: newHistory,
+        [fighter]: { ...prev[fighter], score: Math.max(0, prev[fighter].score + points) },
+        [historyKey]: [
+          ...prev[historyKey],
+          { value: points, type: 'score' as const, timestamp: Date.now() },
+        ],
       };
       return checkImmediateVictory(newState);
     });
