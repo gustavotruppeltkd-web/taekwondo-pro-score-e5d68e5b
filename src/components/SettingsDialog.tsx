@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScoreboardSettings } from "@/hooks/useScoreboard";
-import { Upload, Volume2, User } from "lucide-react";
+import { User } from "lucide-react";
 
 interface SettingsDialogProps {
   open: boolean;
@@ -22,11 +22,6 @@ export const SettingsDialog = ({
   onResetMatch,
 }: SettingsDialogProps) => {
   const [localSettings, setLocalSettings] = useState(settings);
-  const [audioFiles, setAudioFiles] = useState({
-    roundStart: null as File | null,
-    roundEnd: null as File | null,
-    tenSecondWarning: null as File | null,
-  });
 
   useEffect(() => {
     if (open) {
@@ -37,10 +32,6 @@ export const SettingsDialog = ({
   const handleSave = () => {
     onSave(localSettings);
     onOpenChange(false);
-  };
-
-  const handleAudioUpload = (type: keyof typeof audioFiles, file: File | null) => {
-    setAudioFiles(prev => ({ ...prev, [type]: file }));
   };
 
   return (
@@ -178,41 +169,6 @@ export const SettingsDialog = ({
                 }))}
                 className="bg-input border-border"
               />
-            </div>
-          </div>
-
-          {/* Audio Settings */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-              <Volume2 className="w-4 h-4" />
-              Áudio
-            </h3>
-
-            <div className="space-y-3">
-              {[
-                { key: 'roundStart', label: 'Início de Round' },
-                { key: 'roundEnd', label: 'Fim de Round' },
-                { key: 'tenSecondWarning', label: 'Alerta 10 Segundos' },
-              ].map(({ key, label }) => (
-                <div key={key} className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">{label}</span>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="file"
-                      accept="audio/*"
-                      className="hidden"
-                      onChange={(e) => handleAudioUpload(
-                        key as keyof typeof audioFiles,
-                        e.target.files?.[0] || null
-                      )}
-                    />
-                    <span className={`text-xs ${audioFiles[key as keyof typeof audioFiles] ? 'text-timer' : 'text-muted-foreground'}`}>
-                      {audioFiles[key as keyof typeof audioFiles]?.name || 'Beep padrão'}
-                    </span>
-                    <Upload className="w-4 h-4 text-muted-foreground" />
-                  </label>
-                </div>
-              ))}
             </div>
           </div>
 
