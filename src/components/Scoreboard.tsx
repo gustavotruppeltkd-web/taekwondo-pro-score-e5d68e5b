@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { Menu } from "lucide-react";
 import { FighterPanel } from "./FighterPanel";
 import { TimerPanel } from "./TimerPanel";
 import { SettingsDialog } from "./SettingsDialog";
@@ -182,6 +183,16 @@ export const Scoreboard = () => {
         onRevertToPreviousRound={revertToPreviousRound}
         onDownloadReport={handleDownloadReport}
       />
+
+      {/* Menu button — separate from the timer, bottom-center (opens settings) */}
+      <button
+        onClick={() => setSettingsOpen(true)}
+        className="absolute bottom-3 md:bottom-5 left-1/2 -translate-x-1/2 z-30 w-11 h-11 md:w-12 md:h-12 rounded-full bg-background/90 border-2 border-muted text-foreground/70 hover:text-foreground hover:bg-background flex items-center justify-center shadow-lg transition-all active:scale-95"
+        title="Menu / Configurações"
+        aria-label="Abrir menu"
+      >
+        <Menu className="w-5 h-5 md:w-6 md:h-6" />
+      </button>
 
       {/* Round Winner Banner */}
       <RoundWinnerBanner

@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { PointIcon } from "./PointIcon";
 
 export interface PointEntry {
   value: number;
@@ -25,19 +26,26 @@ export const PointHistorySidebar = ({ side, history }: PointHistorySidebarProps)
         <div
           key={entry.timestamp}
           className={cn(
-            "px-2 py-1 md:px-3 md:py-1.5 rounded-lg text-xs md:text-sm font-bold",
+            "flex items-center justify-center rounded-lg p-1.5 md:p-2",
             "backdrop-blur-sm shadow-lg transition-all",
-            entry.value > 0 
-              ? "bg-white/20 text-white border border-white/30" 
-              : "bg-gamjeom/80 text-black border border-gamjeom",
+            entry.type === 'gamjeom'
+              ? "bg-gamjeom/80 text-black border border-gamjeom"
+              : entry.isDouble
+                ? "bg-amber-400/90 text-black border border-amber-500"
+                : "bg-white/20 text-white border border-white/30",
             index === 0 && "animate-pulse-once"
           )}
-          style={{ 
+          style={{
             opacity: 1 - (index * 0.15),
             transform: `scale(${1 - (index * 0.05)})`
           }}
         >
-          {entry.value > 0 ? `+${entry.value}` : entry.value}
+          <PointIcon
+            value={entry.value}
+            type={entry.type}
+            isDouble={entry.isDouble}
+            className="w-5 h-5 md:w-6 md:h-6"
+          />
         </div>
       ))}
     </div>
