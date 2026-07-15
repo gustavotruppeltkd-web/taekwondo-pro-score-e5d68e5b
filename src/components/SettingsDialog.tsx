@@ -134,7 +134,7 @@ export const SettingsDialog = ({
                   value={localSettings.maxScore}
                   onChange={(e) => setLocalSettings(prev => ({
                     ...prev,
-                    maxScore: parseInt(e.target.value) || 20
+                    maxScore: parseInt(e.target.value) || 15
                   }))}
                   className="bg-input border-border"
                 />
@@ -148,7 +148,7 @@ export const SettingsDialog = ({
                   value={localSettings.maxGamjeom}
                   onChange={(e) => setLocalSettings(prev => ({
                     ...prev,
-                    maxGamjeom: parseInt(e.target.value) || 10
+                    maxGamjeom: parseInt(e.target.value) || 5
                   }))}
                   className="bg-input border-border"
                 />
