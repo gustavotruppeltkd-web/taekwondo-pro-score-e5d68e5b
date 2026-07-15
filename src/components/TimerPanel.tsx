@@ -64,7 +64,6 @@ export const TimerPanel = ({
   onRevertToPreviousRound,
   onDownloadReport,
 }: TimerPanelProps) => {
-  const [isCompact, setIsCompact] = useState(false);
   const boundsRef = useRef<HTMLDivElement | null>(null);
   const initializedRef = useRef(false);
 
@@ -270,129 +269,6 @@ export const TimerPanel = ({
                 </button>
               )}
 
-              {/* Bottom Controls - Compact row */}
-              <div className="flex items-center justify-center gap-1 mt-auto pb-1">
-                {/* Compact Toggle */}
-                <button
-                  onClick={() => setIsCompact(!isCompact)}
-                  className={cn(
-                    "p-1 rounded-full",
-                    "bg-muted/30 hover:bg-muted/60 text-foreground/40 hover:text-foreground/80",
-                    "transition-all duration-200"
-                  )}
-                >
-                  {isCompact ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
-                </button>
-
-                {/* Collapsible Controls - All config and control buttons */}
-                <AnimatePresence>
-                  {!isCompact && (
-                    <motion.div
-                      initial={{ opacity: 0, width: 0 }}
-                      animate={{ opacity: 1, width: 'auto' }}
-                      exit={{ opacity: 0, width: 0 }}
-                      transition={{ duration: 0.15 }}
-                      className="flex items-center gap-1.5 overflow-hidden"
-                    >
-                      {/* Time Adjustment */}
-                      <button
-                        onClick={() => onAdjustTime(-1)}
-                        className={cn(
-                          "px-2 py-1 text-xs rounded",
-                          "bg-muted/50 hover:bg-muted text-foreground/70",
-                          "transition-all duration-200 active:scale-95"
-                        )}
-                      >
-                        -1s
-                      </button>
-                      <button
-                        onClick={() => onAdjustTime(1)}
-                        className={cn(
-                          "px-2 py-1 text-xs rounded",
-                          "bg-muted/50 hover:bg-muted text-foreground/70",
-                          "transition-all duration-200 active:scale-95"
-                        )}
-                      >
-                        +1s
-                      </button>
-
-                      <div className="w-px h-5 bg-border/30 mx-1" />
-
-                      {/* Control Buttons */}
-                      <button
-                        onClick={onResetRound}
-                        className={cn(
-                          "p-1.5 rounded-full",
-                          "bg-muted/50 hover:bg-muted text-foreground/60 hover:text-foreground",
-                          "transition-all duration-200 active:scale-95"
-                        )}
-                        title="Reiniciar Round"
-                      >
-                        <RotateCcw className="w-4 h-4" />
-                      </button>
-
-                      {canRevertRound && onRevertToPreviousRound && (
-                        <button
-                          onClick={onRevertToPreviousRound}
-                          className={cn(
-                            "p-1.5 rounded-full",
-                            "bg-destructive/60 hover:bg-destructive text-destructive-foreground",
-                            "transition-all duration-200 active:scale-95"
-                          )}
-                          title="Retornar ao Round Anterior"
-                        >
-                          <Undo2 className="w-4 h-4" />
-                        </button>
-                      )}
-
-                      <button
-                        onClick={onToggleSubtractMode}
-                        className={cn(
-                          "p-1.5 rounded-full",
-                          "transition-all duration-200 active:scale-95",
-                          isSubtractMode
-                            ? "bg-gamjeom text-black ring-1 ring-gamjeom"
-                            : "bg-muted/50 hover:bg-muted text-foreground/60 hover:text-foreground"
-                        )}
-                        title="Modo Correção (Subtrair)"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-
-                      <div className="w-px h-5 bg-border/30 mx-1" />
-
-                      {/* Settings & Gamepad */}
-                      <button
-                        onClick={onOpenSettings}
-                        className={cn(
-                          "p-1.5 rounded-full",
-                          "bg-muted/50 hover:bg-muted text-foreground/60 hover:text-foreground",
-                          "transition-all duration-200 active:scale-95"
-                        )}
-                        title="Configurações"
-                      >
-                        <Settings className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={onOpenGamepad}
-                        className={cn(
-                          "p-1.5 rounded-full relative",
-                          "bg-muted/50 hover:bg-muted text-foreground/60 hover:text-foreground",
-                          "transition-all duration-200 active:scale-95"
-                        )}
-                        title="Controle"
-                      >
-                        <Gamepad2 className="w-4 h-4" />
-                        {gamepadConnected && (
-                          <span className="absolute -top-1 -right-1 min-w-[16px] h-4 flex items-center justify-center bg-timer text-black text-[10px] font-bold rounded-full px-0.5">
-                            {gamepadCount}
-                          </span>
-                        )}
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
             </div>
           </div>
         </Rnd>

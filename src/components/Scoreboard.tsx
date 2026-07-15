@@ -1,5 +1,7 @@
 import { useState, useCallback } from "react";
-import { Menu } from "lucide-react";
+import { Menu, X, Minus, RotateCcw, Undo2, Settings, Gamepad2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 import { FighterPanel } from "./FighterPanel";
 import { TimerPanel } from "./TimerPanel";
 import { SettingsDialog } from "./SettingsDialog";
@@ -13,6 +15,7 @@ import { resolveFighterName } from "@/lib/fighterNames";
 export const Scoreboard = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [gamepadOpen, setGamepadOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [gamepadMapping, setGamepadMapping] = useState<GamepadMapping>(defaultMapping);
 
   const {
@@ -184,15 +187,57 @@ export const Scoreboard = () => {
         onDownloadReport={handleDownloadReport}
       />
 
-      {/* Menu button — separate from the timer, bottom-center (opens settings) */}
-      <button
-        onClick={() => setSettingsOpen(true)}
-        className="absolute bottom-3 md:bottom-5 left-1/2 -translate-x-1/2 z-30 w-11 h-11 md:w-12 md:h-12 rounded-full bg-background/90 border-2 border-muted text-foreground/70 hover:text-foreground hover:bg-background flex items-center justify-center shadow-lg transition-all active:scale-95"
-        title="Menu / Configurações"
-        aria-label="Abrir menu"
-      >
-        <Menu className="w-5 h-5 md:w-6 md:h-6" />
-      </button>
+      {/* Bottom-center menu — holds every timer control. Opens with an
+          animation from the button; the hamburger turns into an X to close. */}
+      <div className="absolute bottom-3 md:bottom-5 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-2.5">
+        <AnimatePresence>
+          {menuOpen && (
+            <motion.div
+              key="menu-toolbar"
+              initial={{ opacity: 0, y: 22, scale: 0.8 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 22, scale: 0.8 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+              style={{ transformOrigin: "bottom center" }}
+              className="flex items-center gap-1.5 rounded-full bg-neutral-900/95 border border-white/10 px-2.5 py-2 shadow-2xl"
+            >
+              <button onClick={() => adjustTime(-1)} className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-200/90 text-black hover:bg-amber-200 active:scale-95 transition">-1s</button>
+              <button onClick={() => adjustTime(1)} className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-200/90 text-black hover:bg-amber-200 active:scale-95 transition">+1s</button>
+              <button onClick={resetRound} title="Reiniciar round" className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center active:scale-95 transition">
+                <RotateCcw className="w-4 h-4" />
+              </button>
+              {state.previousRoundSnapshot !== null && (
+                <button onClick={revertToPreviousRound} title="Voltar ao round anterior" className="w-9 h-9 rounded-full bg-destructive hover:bg-destructive/80 text-destructive-foreground flex items-center justify-center active:scale-95 transition">
+                  <Undo2 className="w-4 h-4" />
+                </button>
+              )}
+              <button onClick={toggleSubtractMode} title="Modo correção" className={cn("w-9 h-9 rounded-full flex items-center justify-center active:scale-95 transition", state.isSubtractMode ? "bg-gamjeom text-black" : "bg-white/10 hover:bg-white/20 text-white")}>
+                <Minus className="w-4 h-4" />
+              </button>
+              <button onClick={() => { setSettingsOpen(true); setMenuOpen(false); }} title="Configurações" className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center active:scale-95 transition">
+                <Settings className="w-4 h-4" />
+              </button>
+              <button onClick={() => { setGamepadOpen(true); setMenuOpen(false); }} title="Controle" className="relative w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center active:scale-95 transition">
+                <Gamepad2 className="w-4 h-4" />
+                {gamepadConnected && (
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-0.5 flex items-center justify-center bg-timer text-black text-[10px] font-bold rounded-full">
+                    {gamepadCount}
+                  </span>
+                )}
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <button
+          onClick={() => setMenuOpen((v) => !v)}
+          className="w-11 h-11 md:w-12 md:h-12 rounded-full bg-background/90 border-2 border-muted text-foreground/80 hover:text-foreground hover:bg-background flex items-center justify-center shadow-lg transition-all active:scale-95"
+          title="Menu"
+          aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}
+        >
+          {menuOpen ? <X className="w-5 h-5 md:w-6 md:h-6" /> : <Menu className="w-5 h-5 md:w-6 md:h-6" />}
+        </button>
+      </div>
 
       {/* Round Winner Banner */}
       <RoundWinnerBanner
