@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
 // Silence audio (no AudioContext in jsdom).
@@ -61,5 +61,87 @@ describe("useScoreboard — correction (subtract) mode", () => {
     act(() => result.current.addPoints("chung", 3)); // no +3 exists
     expect(result.current.state.chung.score).toBe(1);
     expect(scoreEntries(result.current.state.chungHistory)).toHaveLength(1);
+  });
+});
+
+describe("useScoreboard — saving settings preserves a live match", () => {
+  it("does NOT wipe scores/faults/history when settings are saved mid-match", () => {
+    const { result } = renderHook(() => useScoreboard());
+    act(() => result.current.addPoints("chung", 3));
+    act(() => result.current.addGamjeom("hong")); // chung gets a point, hong a fault
+    const chungScoreBefore = result.current.state.chung.score;
+
+    act(() => result.current.updateSettings({ chungName: "João", roundTime: 90 }));
+
+    expect(result.current.state.chung.score).toBe(chungScoreBefore);
+    expect(result.current.state.hong.gamjeom).toBe(1);
+    expect(scoreEntries(result.current.state.chungHistory).length).toBeGreaterThan(0);
+    expect(result.current.settings.chungName).toBe("João");
+  });
+
+  it("applies the new round time to the clock on a fresh (unstarted) round", () => {
+    const { result } = renderHook(() => useScoreboard());
+    act(() => result.current.updateSettings({ roundTime: 90 }));
+    expect(result.current.state.timeRemaining).toBe(90);
+  });
+});
+
+describe("useScoreboard — victory conditions", () => {
+  it("a point gap of maxScore ends the round for the leader (then rest)", () => {
+    const { result } = renderHook(() => useScoreboard()); // maxScore 15, best-of-3
+    for (let i = 0; i < 5; i++) act(() => result.current.addPoints("chung", 3));
+    expect(result.current.state.chung.score).toBe(15);
+    expect(result.current.state.roundWinner).toBe("chung");
+    expect(result.current.state.chung.roundsWon).toBe(1);
+    expect(result.current.state.isResting).toBe(true);
+    expect(result.current.state.matchEnded).toBe(false);
+  });
+
+  it("reaching the gam-jeom limit gives the round to the opponent", () => {
+    const { result } = renderHook(() => useScoreboard()); // maxGamjeom 5
+    for (let i = 0; i < 5; i++) act(() => result.current.addGamjeom("chung"));
+    expect(result.current.state.chung.gamjeom).toBe(5);
+    expect(result.current.state.roundWinner).toBe("hong");
+    expect(result.current.state.hong.roundsWon).toBe(1);
+  });
+
+  it("winning enough rounds ends the match", () => {
+    const { result } = renderHook(() => useScoreboard());
+    for (let i = 0; i < 5; i++) act(() => result.current.addPoints("chung", 3)); // R1
+    act(() => result.current.nextRound());
+    for (let i = 0; i < 5; i++) act(() => result.current.addPoints("chung", 3)); // R2
+    expect(result.current.state.chung.roundsWon).toBe(2);
+    expect(result.current.state.matchEnded).toBe(true);
+    expect(result.current.state.matchWinner).toBe("chung");
+  });
+});
+
+describe("useScoreboard — tiebreaker at time-out", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it("auto-resolves a tie in favor of who scored more 3-pointers", () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() => useScoreboard({ roundTime: 2 }));
+    // 6-6, chung has two 3s, hong has three 2s -> chung wins tiebreaker
+    act(() => result.current.addPoints("chung", 3));
+    act(() => result.current.addPoints("chung", 3));
+    act(() => result.current.addPoints("hong", 2));
+    act(() => result.current.addPoints("hong", 2));
+    act(() => result.current.addPoints("hong", 2));
+    act(() => result.current.toggleTimer());
+    act(() => vi.advanceTimersByTime(2000));
+    expect(result.current.state.roundWinner).toBe("chung");
+  });
+
+  it("shows the referee decision modal when a tie cannot be broken", () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() => useScoreboard({ roundTime: 2 }));
+    // identical scoring on both sides -> unbreakable tie
+    act(() => result.current.addPoints("chung", 2));
+    act(() => result.current.addPoints("hong", 2));
+    act(() => result.current.toggleTimer());
+    act(() => vi.advanceTimersByTime(2000));
+    expect(result.current.state.showDecisionModal).toBe(true);
+    expect(result.current.state.roundWinner).toBeNull();
   });
 });

@@ -765,25 +765,26 @@ export const useScoreboard = (initialSettings?: Partial<ScoreboardSettings>) => 
     };
   }, [state.isRunning, state.matchEnded, settings.roundTime, settings.restTime, endRound]);
 
-  // Update settings and auto-restart round
+  // Update settings. Saving must NEVER wipe a live match: scores, faults,
+  // history and the running clock are preserved. The new round time is applied
+  // to the clock only when the current round is still "fresh" (not started, no
+  // scores) — i.e. pre-match setup. Otherwise it takes effect on the next round.
   const updateSettings = useCallback((newSettings: Partial<ScoreboardSettings>) => {
     setSettings(prev => ({ ...prev, ...newSettings }));
-    // Auto-restart current round when settings are saved
-    tenSecondAlertRef.current = false;
-    setState(prev => ({
-      ...prev,
-      chung: { ...prev.chung, score: 0, gamjeom: 0 },
-      hong: { ...prev.hong, score: 0, gamjeom: 0 },
-      timeRemaining: newSettings.roundTime || settings.roundTime,
-      isRunning: false,
-      isResting: false,
-      roundWinner: null,
-      showRoundWinner: false,
-      showDecisionModal: false,
-      chungHistory: [],
-      hongHistory: [],
-    }));
-  }, [settings.roundTime]);
+    setState(prev => {
+      const isFreshRound =
+        !prev.isRunning && !prev.isResting && !prev.matchEnded &&
+        prev.chung.score === 0 && prev.hong.score === 0 &&
+        prev.chung.gamjeom === 0 && prev.hong.gamjeom === 0 &&
+        prev.chungHistory.length === 0 && prev.hongHistory.length === 0;
+
+      if (isFreshRound && newSettings.roundTime) {
+        tenSecondAlertRef.current = false;
+        return { ...prev, timeRemaining: newSettings.roundTime };
+      }
+      return prev;
+    });
+  }, []);
 
   return {
     state,
