@@ -1,7 +1,8 @@
 import { useState, useCallback } from "react";
-import { Menu, X, Minus, RotateCcw, Undo2, Settings, Gamepad2, FileDown } from "lucide-react";
+import { Menu, X, Minus, RotateCcw, Undo2, Settings, Gamepad2, FileDown, Map } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import gamepadMap from "@/assets/gamepad-map.png";
 import { FighterPanel } from "./FighterPanel";
 import { TimerPanel } from "./TimerPanel";
 import { SettingsDialog } from "./SettingsDialog";
@@ -16,6 +17,7 @@ export const Scoreboard = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [gamepadOpen, setGamepadOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
   const [gamepadMapping, setGamepadMapping] = useState<GamepadMapping>(defaultMapping);
 
   const {
@@ -225,6 +227,9 @@ export const Scoreboard = () => {
                   </span>
                 )}
               </button>
+              <button onClick={() => { setMapOpen(true); setMenuOpen(false); }} title="Mapa dos controles" className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center active:scale-95 transition">
+                <Map className="w-4 h-4" />
+              </button>
               <button onClick={handleDownloadReport} title="Baixar PDF da luta" className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center active:scale-95 transition">
                 <FileDown className="w-4 h-4" />
               </button>
@@ -279,6 +284,28 @@ export const Scoreboard = () => {
         gamepadName={gamepadName}
         gamepadNames={gamepadNames}
       />
+
+      {/* Gamepad mapping reference — opened from the menu's map button */}
+      {mapOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 animate-in fade-in"
+          onClick={() => setMapOpen(false)}
+        >
+          <button
+            onClick={() => setMapOpen(false)}
+            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition"
+            aria-label="Fechar"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <img
+            src={gamepadMap}
+            alt="Mapeamento original dos controles"
+            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 };
