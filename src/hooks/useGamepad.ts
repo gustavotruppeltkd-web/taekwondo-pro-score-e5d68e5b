@@ -25,31 +25,63 @@ export interface GamepadMapping {
 // at AXIS_BUTTON_BASE, which never collide with real button indices (0..~17).
 // This is purely additive: standard PS/Xbox pads keep working exactly as before
 // (their sticks map to virtual buttons that no action uses by default). ---
-export const AXIS_BUTTON_BASE = 100;
-const AXIS_THRESHOLD = 0.6;      // how far an axis must move to count as "pressed"
-const AXIS_NEUTRAL_MAX = 1.05;   // ignore out-of-range hat "neutral" values (e.g. ~1.28)
+export const AXIS_BUTTON_BASE = 100; // analog axis directions (pos/neg per axis)
+export const HAT_BUTTON_BASE = 200;  // decoded D-pad "hat" directions (up/right/down/left)
+const AXIS_THRESHOLD = 0.6;          // how far an analog axis must move to count as pressed
+const HAT_NEUTRAL_MIN = 1.1;         // |v| >= this at rest ⇒ the axis is a D-pad hat
 
-// Virtual button index for an axis direction. Even = negative, odd = positive.
+// Virtual button index for an analog axis direction. Even = negative, odd = positive.
 export const axisButtonIndex = (axisIndex: number, positive: boolean) =>
   AXIS_BUTTON_BASE + axisIndex * 2 + (positive ? 1 : 0);
 
-// Which virtual buttons are currently active from a set of axis values. Pure —
-// unit-tested and reused by the diagnostics panel.
-export const activeAxisButtons = (axes: readonly number[]): number[] => {
+// Virtual button index for a decoded hat direction (0=up,1=right,2=down,3=left).
+export const hatButtonIndex = (axisIndex: number, dir: 0 | 1 | 2 | 3) =>
+  HAT_BUTTON_BASE + axisIndex * 4 + dir;
+
+// Decode a "hat" axis value (in [-1,1]) into its active direction virtual buttons.
+// Generic pads encode the 8-way D-pad in a single axis: -1 = Up, stepping by ~2/7
+// clockwise (Up-Right, Right, Down-Right, Down, Down-Left, Left, Up-Left).
+export const decodeHatButtons = (axisIndex: number, v: number): number[] => {
+  const n = Math.round((v + 1) * 3.5); // 0..7 (8 = neutral, excluded by caller)
+  const map: Record<number, (0 | 1 | 2 | 3)[]> = {
+    0: [0], 1: [0, 1], 2: [1], 3: [1, 2], 4: [2], 5: [2, 3], 6: [3], 7: [0, 3],
+  };
+  return (map[n] ?? []).map((d) => hatButtonIndex(axisIndex, d));
+};
+
+// Which virtual buttons are active from a set of axis values. `hatAxes` remembers
+// which axes behave like a D-pad hat (detected by their out-of-range neutral) so
+// analog sticks keep the simple pos/neg behavior while hats are decoded to
+// directions. Mutates `hatAxes` as it learns.
+export const activeAxisInputs = (axes: readonly number[], hatAxes: Set<number>): number[] => {
   const out: number[] = [];
   axes.forEach((v, i) => {
-    if (Math.abs(v) > AXIS_NEUTRAL_MAX) return; // out-of-range = neutral (hat)
-    if (v > AXIS_THRESHOLD) out.push(axisButtonIndex(i, true));
-    else if (v < -AXIS_THRESHOLD) out.push(axisButtonIndex(i, false));
+    if (Math.abs(v) >= HAT_NEUTRAL_MIN) {
+      hatAxes.add(i); // resting out of range ⇒ this axis is a hat; neutral now
+      return;
+    }
+    if (hatAxes.has(i)) {
+      out.push(...decodeHatButtons(i, v));
+    } else if (v > AXIS_THRESHOLD) {
+      out.push(axisButtonIndex(i, true));
+    } else if (v < -AXIS_THRESHOLD) {
+      out.push(axisButtonIndex(i, false));
+    }
   });
   return out;
 };
 
+// Backwards-compatible pure helper (analog-only view; no hat memory).
+export const activeAxisButtons = (axes: readonly number[]): number[] =>
+  activeAxisInputs(axes, new Set());
+
 // Reconcile a gamepad's buttons AND axis-derived virtual buttons against the
-// previously-pressed set, firing onPress only on rising edges.
+// previously-pressed set, firing onPress only on rising edges. `hatAxes` is
+// persistent per gamepad so hat detection is remembered across frames.
 const processGamepadInputs = (
   gamepad: Gamepad,
   pressed: Set<number>,
+  hatAxes: Set<number>,
   onPress: (index: number) => void
 ) => {
   gamepad.buttons.forEach((button, index) => {
@@ -63,7 +95,7 @@ const processGamepadInputs = (
     }
   });
 
-  const active = new Set(activeAxisButtons(gamepad.axes));
+  const active = new Set(activeAxisInputs(gamepad.axes, hatAxes));
   active.forEach((btn) => {
     if (!pressed.has(btn)) {
       pressed.add(btn);
@@ -158,6 +190,7 @@ export const useGamepad = (mapping: GamepadMapping, actions: GamepadActions) => 
   const mappingRef = useRef(mapping);
   const actionsRef = useRef(actions);
   const pressedButtonsMap = useRef<Map<number, Set<number>>>(new Map());
+  const hatAxesMap = useRef<Map<number, Set<number>>>(new Map());
   const animationFrameRef = useRef<number>();
   const pendingVotes = useRef<PendingVote[]>([]);
   const connectedCountRef = useRef(0);
@@ -281,15 +314,20 @@ export const useGamepad = (mapping: GamepadMapping, actions: GamepadActions) => 
         if (!pressedButtonsMap.current.has(i)) {
           pressedButtonsMap.current.set(i, new Set());
         }
+        if (!hatAxesMap.current.has(i)) {
+          hatAxesMap.current.set(i, new Set());
+        }
         const pressed = pressedButtonsMap.current.get(i)!;
+        const hatAxes = hatAxesMap.current.get(i)!;
 
-        processGamepadInputs(gamepad, pressed, (index) => handleButtonPress(index, i, count));
+        processGamepadInputs(gamepad, pressed, hatAxes, (index) => handleButtonPress(index, i, count));
       }
 
       // Clean up disconnected gamepads
       for (const [idx] of pressedButtonsMap.current) {
         if (!gamepads[idx]) {
           pressedButtonsMap.current.delete(idx);
+          hatAxesMap.current.delete(idx);
         }
       }
 
@@ -316,6 +354,7 @@ export const useGamepad = (mapping: GamepadMapping, actions: GamepadActions) => 
     const handleGamepadDisconnected = (e: GamepadEvent) => {
       console.log('Gamepad disconnected:', e.gamepad.id, '(index:', e.gamepad.index, ')');
       pressedButtonsMap.current.delete(e.gamepad.index);
+      hatAxesMap.current.delete(e.gamepad.index);
     };
 
     window.addEventListener('gamepadconnected', handleGamepadConnected);
@@ -345,6 +384,7 @@ export const useGamepad = (mapping: GamepadMapping, actions: GamepadActions) => 
 
 export const useGamepadButtonListener = (onButtonPress: (buttonIndex: number) => void) => {
   const pressedRef = useRef<Map<number, Set<number>>>(new Map());
+  const hatAxesRef = useRef<Map<number, Set<number>>>(new Map());
   const animationFrameRef = useRef<number>();
 
   useEffect(() => {
@@ -358,9 +398,13 @@ export const useGamepadButtonListener = (onButtonPress: (buttonIndex: number) =>
         if (!pressedRef.current.has(i)) {
           pressedRef.current.set(i, new Set());
         }
+        if (!hatAxesRef.current.has(i)) {
+          hatAxesRef.current.set(i, new Set());
+        }
         const pressed = pressedRef.current.get(i)!;
+        const hatAxes = hatAxesRef.current.get(i)!;
 
-        processGamepadInputs(gamepad, pressed, onButtonPress);
+        processGamepadInputs(gamepad, pressed, hatAxes, onButtonPress);
       }
 
       animationFrameRef.current = requestAnimationFrame(poll);

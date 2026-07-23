@@ -1,13 +1,18 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { GamepadMapping, defaultMapping, useGamepadButtonListener, activeAxisButtons, AXIS_BUTTON_BASE } from "@/hooks/useGamepad";
+import { GamepadMapping, defaultMapping, useGamepadButtonListener, activeAxisInputs, AXIS_BUTTON_BASE, HAT_BUTTON_BASE } from "@/hooks/useGamepad";
 import { Gamepad2, Check, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Human-readable name for a mapped input — real button, or an axis direction
-// (virtual button >= AXIS_BUTTON_BASE) used by non-standard controllers.
+const HAT_ARROWS = ["↑", "→", "↓", "←"];
+
+// Human-readable name for a mapped input — real button, decoded D-pad direction,
+// or an analog axis direction (virtual buttons) used by non-standard controllers.
 const inputName = (index: number): string => {
+  if (index >= HAT_BUTTON_BASE) {
+    return `Direcional ${HAT_ARROWS[(index - HAT_BUTTON_BASE) % 4]}`;
+  }
   if (index >= AXIS_BUTTON_BASE) {
     const axis = Math.floor((index - AXIS_BUTTON_BASE) / 2);
     const positive = (index - AXIS_BUTTON_BASE) % 2 === 1;
@@ -81,6 +86,7 @@ interface PadSnapshot {
 // input fires when a button is pressed. Read-only; polls only while mounted.
 const GamepadDiagnostics = () => {
   const [pads, setPads] = useState<PadSnapshot[]>([]);
+  const hatAxesRef = useRef<Map<number, Set<number>>>(new Map());
 
   useEffect(() => {
     let raf = 0;
@@ -93,8 +99,11 @@ const GamepadDiagnostics = () => {
         for (let i = 0; i < list.length; i++) {
           const g = list[i];
           if (!g) continue;
+          if (!hatAxesRef.current.has(g.index)) hatAxesRef.current.set(g.index, new Set());
+          const hatAxes = hatAxesRef.current.get(g.index)!;
           const btns = g.buttons.map((b, idx) => (b.pressed ? `B${idx}` : null)).filter(Boolean) as string[];
-          const axisBtns = activeAxisButtons(g.axes).map((v) => {
+          const axisBtns = activeAxisInputs(g.axes, hatAxes).map((v) => {
+            if (v >= HAT_BUTTON_BASE) return `Dir ${HAT_ARROWS[(v - HAT_BUTTON_BASE) % 4]}`;
             const axis = Math.floor((v - AXIS_BUTTON_BASE) / 2);
             const pos = (v - AXIS_BUTTON_BASE) % 2 === 1;
             return `Eixo${axis}${pos ? "+" : "−"}`;
