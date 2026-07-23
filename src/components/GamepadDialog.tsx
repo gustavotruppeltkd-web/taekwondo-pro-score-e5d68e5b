@@ -1,9 +1,20 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { GamepadMapping, defaultMapping, useGamepadButtonListener } from "@/hooks/useGamepad";
+import { GamepadMapping, defaultMapping, useGamepadButtonListener, activeAxisButtons, AXIS_BUTTON_BASE } from "@/hooks/useGamepad";
 import { Gamepad2, Check, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// Human-readable name for a mapped input — real button, or an axis direction
+// (virtual button >= AXIS_BUTTON_BASE) used by non-standard controllers.
+const inputName = (index: number): string => {
+  if (index >= AXIS_BUTTON_BASE) {
+    const axis = Math.floor((index - AXIS_BUTTON_BASE) / 2);
+    const positive = (index - AXIS_BUTTON_BASE) % 2 === 1;
+    return `Eixo ${axis} ${positive ? "+" : "−"}`;
+  }
+  return buttonNames[index] || `Botão ${index}`;
+};
 
 interface GamepadDialogProps {
   open: boolean;
@@ -54,6 +65,86 @@ const buttonNames: Record<number, string> = {
   15: 'D-pad Right',
   16: 'PS / Guide',
   17: 'Touchpad',
+};
+
+interface PadSnapshot {
+  index: number;
+  id: string;
+  mapping: string;
+  buttons: number;
+  axes: number;
+  pressed: string[];
+}
+
+// Live view of what each connected controller reports — helps diagnose
+// non-standard pads (iPega etc.): mapping type, button/axis counts, and which
+// input fires when a button is pressed. Read-only; polls only while mounted.
+const GamepadDiagnostics = () => {
+  const [pads, setPads] = useState<PadSnapshot[]>([]);
+
+  useEffect(() => {
+    let raf = 0;
+    let last = 0;
+    const loop = (t: number) => {
+      if (t - last > 120) {
+        last = t;
+        const list = navigator.getGamepads?.() ?? [];
+        const snap: PadSnapshot[] = [];
+        for (let i = 0; i < list.length; i++) {
+          const g = list[i];
+          if (!g) continue;
+          const btns = g.buttons.map((b, idx) => (b.pressed ? `B${idx}` : null)).filter(Boolean) as string[];
+          const axisBtns = activeAxisButtons(g.axes).map((v) => {
+            const axis = Math.floor((v - AXIS_BUTTON_BASE) / 2);
+            const pos = (v - AXIS_BUTTON_BASE) % 2 === 1;
+            return `Eixo${axis}${pos ? "+" : "−"}`;
+          });
+          snap.push({
+            index: g.index,
+            id: g.id,
+            mapping: g.mapping || "",
+            buttons: g.buttons.length,
+            axes: g.axes.length,
+            pressed: [...btns, ...axisBtns],
+          });
+        }
+        setPads(snap);
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  if (pads.length === 0) return null;
+
+  return (
+    <div className="space-y-2">
+      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Diagnóstico</h3>
+      {pads.map((p) => (
+        <div key={p.index} className="rounded-lg border border-border p-3 space-y-1.5">
+          <p className="text-xs font-medium truncate">{p.id}</p>
+          <div className="flex flex-wrap items-center gap-2 text-[11px]">
+            <span className={cn("px-2 py-0.5 rounded-full", p.mapping === "standard" ? "bg-timer/20 text-timer" : "bg-amber-500/20 text-amber-500")}>
+              {p.mapping === "standard" ? "padrão ✓" : "não-padrão ⚠"}
+            </span>
+            <span className="text-muted-foreground">{p.buttons} botões · {p.axes} eixos</span>
+          </div>
+          <div className="min-h-[22px] flex flex-wrap gap-1">
+            {p.pressed.length === 0 ? (
+              <span className="text-[11px] text-muted-foreground">Pressione um botão para ver o que ele aciona…</span>
+            ) : (
+              p.pressed.map((label) => (
+                <span key={label} className="text-[11px] px-1.5 py-0.5 rounded bg-primary text-primary-foreground font-mono">
+                  {label}
+                </span>
+              ))
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 };
 
 export const GamepadDialog = ({
@@ -116,7 +207,7 @@ export const GamepadDialog = ({
             ? "bg-primary text-primary-foreground"
             : "bg-muted text-muted-foreground"
         )}>
-          {isListening ? 'Pressione...' : buttonIndex !== null ? buttonNames[buttonIndex] || `Botão ${buttonIndex}` : 'Não mapeado'}
+          {isListening ? 'Pressione...' : buttonIndex !== null ? inputName(buttonIndex) : 'Não mapeado'}
         </span>
       </button>
     );
@@ -164,6 +255,9 @@ export const GamepadDialog = ({
               )}
             </div>
           </div>
+
+          {/* Live diagnostics — shows what each controller reports */}
+          <GamepadDiagnostics />
 
           {/* Chung Mappings */}
           <div className="space-y-3">

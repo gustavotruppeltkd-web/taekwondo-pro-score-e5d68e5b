@@ -19,6 +19,62 @@ export interface GamepadMapping {
   resetMatch: number | null;
 }
 
+// --- Axis support (for non-standard controllers: iPega and other generic BT
+// pads report the D-pad as a "hat" axis and triggers as analog axes instead of
+// buttons). We translate axis directions into VIRTUAL button indices starting
+// at AXIS_BUTTON_BASE, which never collide with real button indices (0..~17).
+// This is purely additive: standard PS/Xbox pads keep working exactly as before
+// (their sticks map to virtual buttons that no action uses by default). ---
+export const AXIS_BUTTON_BASE = 100;
+const AXIS_THRESHOLD = 0.6;      // how far an axis must move to count as "pressed"
+const AXIS_NEUTRAL_MAX = 1.05;   // ignore out-of-range hat "neutral" values (e.g. ~1.28)
+
+// Virtual button index for an axis direction. Even = negative, odd = positive.
+export const axisButtonIndex = (axisIndex: number, positive: boolean) =>
+  AXIS_BUTTON_BASE + axisIndex * 2 + (positive ? 1 : 0);
+
+// Which virtual buttons are currently active from a set of axis values. Pure —
+// unit-tested and reused by the diagnostics panel.
+export const activeAxisButtons = (axes: readonly number[]): number[] => {
+  const out: number[] = [];
+  axes.forEach((v, i) => {
+    if (Math.abs(v) > AXIS_NEUTRAL_MAX) return; // out-of-range = neutral (hat)
+    if (v > AXIS_THRESHOLD) out.push(axisButtonIndex(i, true));
+    else if (v < -AXIS_THRESHOLD) out.push(axisButtonIndex(i, false));
+  });
+  return out;
+};
+
+// Reconcile a gamepad's buttons AND axis-derived virtual buttons against the
+// previously-pressed set, firing onPress only on rising edges.
+const processGamepadInputs = (
+  gamepad: Gamepad,
+  pressed: Set<number>,
+  onPress: (index: number) => void
+) => {
+  gamepad.buttons.forEach((button, index) => {
+    if (button.pressed) {
+      if (!pressed.has(index)) {
+        pressed.add(index);
+        onPress(index);
+      }
+    } else if (pressed.has(index)) {
+      pressed.delete(index);
+    }
+  });
+
+  const active = new Set(activeAxisButtons(gamepad.axes));
+  active.forEach((btn) => {
+    if (!pressed.has(btn)) {
+      pressed.add(btn);
+      onPress(btn);
+    }
+  });
+  for (const btn of pressed) {
+    if (btn >= AXIS_BUTTON_BASE && !active.has(btn)) pressed.delete(btn);
+  }
+};
+
 // PS3/PS4 Standard Mapping (as specified by user)
 // HONG (Red):
 //   X (button 0): +1 point
@@ -227,14 +283,7 @@ export const useGamepad = (mapping: GamepadMapping, actions: GamepadActions) => 
         }
         const pressed = pressedButtonsMap.current.get(i)!;
 
-        gamepad.buttons.forEach((button, index) => {
-          if (button.pressed && !pressed.has(index)) {
-            pressed.add(index);
-            handleButtonPress(index, i, count);
-          } else if (!button.pressed && pressed.has(index)) {
-            pressed.delete(index);
-          }
-        });
+        processGamepadInputs(gamepad, pressed, (index) => handleButtonPress(index, i, count));
       }
 
       // Clean up disconnected gamepads
@@ -311,14 +360,7 @@ export const useGamepadButtonListener = (onButtonPress: (buttonIndex: number) =>
         }
         const pressed = pressedRef.current.get(i)!;
 
-        gamepad.buttons.forEach((button, index) => {
-          if (button.pressed && !pressed.has(index)) {
-            pressed.add(index);
-            onButtonPress(index);
-          } else if (!button.pressed) {
-            pressed.delete(index);
-          }
-        });
+        processGamepadInputs(gamepad, pressed, onButtonPress);
       }
 
       animationFrameRef.current = requestAnimationFrame(poll);
