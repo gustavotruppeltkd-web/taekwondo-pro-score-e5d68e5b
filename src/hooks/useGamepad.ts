@@ -182,12 +182,14 @@ interface PendingVote {
   timeoutId: number;
 }
 
-export const useGamepad = (mapping: GamepadMapping, actions: GamepadActions) => {
+// `mappings` is keyed by gamepad id — each physical controller uses its own
+// saved mapping; controllers without one fall back to the default layout.
+export const useGamepad = (mappings: Record<string, GamepadMapping>, actions: GamepadActions) => {
   const [connectedCount, setConnectedCount] = useState(0);
   const [gamepadNames, setGamepadNames] = useState<string[]>([]);
 
   // Use refs to store latest values without causing re-renders in the poll loop
-  const mappingRef = useRef(mapping);
+  const mappingsRef = useRef(mappings);
   const actionsRef = useRef(actions);
   const pressedButtonsMap = useRef<Map<number, Set<number>>>(new Map());
   const hatAxesMap = useRef<Map<number, Set<number>>>(new Map());
@@ -198,16 +200,17 @@ export const useGamepad = (mapping: GamepadMapping, actions: GamepadActions) => 
 
   // Keep refs in sync with props (no re-render triggered)
   useEffect(() => {
-    mappingRef.current = mapping;
-  }, [mapping]);
+    mappingsRef.current = mappings;
+  }, [mappings]);
 
   useEffect(() => {
     actionsRef.current = actions;
   }, [actions]);
 
-  // Stable function: find which action a button maps to
-  const findActionForButton = useCallback((buttonIndex: number): keyof GamepadMapping | null => {
-    const currentMapping = mappingRef.current;
+  // Stable function: find which action a button maps to, using the mapping saved
+  // for THIS controller (by id); falls back to the default layout.
+  const findActionForButton = useCallback((buttonIndex: number, gamepadId: string): keyof GamepadMapping | null => {
+    const currentMapping = mappingsRef.current[gamepadId] ?? defaultMapping;
     for (const [key, value] of Object.entries(currentMapping)) {
       if (value === buttonIndex) {
         return key as keyof GamepadMapping;
@@ -244,8 +247,8 @@ export const useGamepad = (mapping: GamepadMapping, actions: GamepadActions) => 
   }, []);
 
   // Stable function: handle a button press with consensus logic
-  const handleButtonPress = useCallback((buttonIndex: number, gamepadIndex: number, totalConnected: number) => {
-    const actionKey = findActionForButton(buttonIndex);
+  const handleButtonPress = useCallback((buttonIndex: number, gamepadId: string, gamepadIndex: number, totalConnected: number) => {
+    const actionKey = findActionForButton(buttonIndex, gamepadId);
     if (!actionKey) return;
 
     // If only 1 controller connected OR action doesn't need consensus → execute immediately
@@ -320,7 +323,7 @@ export const useGamepad = (mapping: GamepadMapping, actions: GamepadActions) => 
         const pressed = pressedButtonsMap.current.get(i)!;
         const hatAxes = hatAxesMap.current.get(i)!;
 
-        processGamepadInputs(gamepad, pressed, hatAxes, (index) => handleButtonPress(index, i, count));
+        processGamepadInputs(gamepad, pressed, hatAxes, (index) => handleButtonPress(index, gamepad.id, i, count));
       }
 
       // Clean up disconnected gamepads

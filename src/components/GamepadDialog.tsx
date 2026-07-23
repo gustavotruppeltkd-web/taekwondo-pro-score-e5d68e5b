@@ -24,8 +24,8 @@ const inputName = (index: number): string => {
 interface GamepadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  mapping: GamepadMapping;
-  onSaveMapping: (mapping: GamepadMapping) => void;
+  mappings: Record<string, GamepadMapping>;
+  onSaveMapping: (gamepadId: string, mapping: GamepadMapping) => void;
   gamepadConnected: boolean;
   gamepadCount: number;
   gamepadName: string | null;
@@ -159,15 +159,30 @@ const GamepadDiagnostics = () => {
 export const GamepadDialog = ({
   open,
   onOpenChange,
-  mapping,
+  mappings,
   onSaveMapping,
   gamepadConnected,
   gamepadCount,
   gamepadName,
   gamepadNames,
 }: GamepadDialogProps) => {
-  const [localMapping, setLocalMapping] = useState<GamepadMapping>(mapping);
+  // Which connected controller we're configuring (by id).
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [localMapping, setLocalMapping] = useState<GamepadMapping>(defaultMapping);
   const [listeningFor, setListeningFor] = useState<keyof GamepadMapping | null>(null);
+
+  // Keep a valid selected controller while open.
+  useEffect(() => {
+    if (!open) return;
+    setSelectedId((cur) => (cur && gamepadNames.includes(cur) ? cur : gamepadNames[0] ?? null));
+  }, [open, gamepadNames]);
+
+  // Load the selected controller's saved mapping (or default) into the editor.
+  useEffect(() => {
+    if (!open) return;
+    setLocalMapping(selectedId ? mappings[selectedId] ?? defaultMapping : defaultMapping);
+    setListeningFor(null);
+  }, [open, selectedId, mappings]);
 
   const handleButtonPress = useCallback((buttonIndex: number) => {
     if (listeningFor) {
@@ -182,7 +197,8 @@ export const GamepadDialog = ({
   useGamepadButtonListener(open && listeningFor ? handleButtonPress : () => { });
 
   const handleSave = () => {
-    onSaveMapping(localMapping);
+    if (!selectedId) return;
+    onSaveMapping(selectedId, localMapping);
     onOpenChange(false);
   };
 
@@ -268,6 +284,39 @@ export const GamepadDialog = ({
           {/* Live diagnostics — shows what each controller reports */}
           <GamepadDiagnostics />
 
+          {/* Which controller are we configuring? */}
+          {gamepadNames.length > 0 ? (
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                Configurando controle
+              </h3>
+              {gamepadNames.length > 1 && (
+                <div className="flex flex-wrap gap-2">
+                  {gamepadNames.map((id, i) => (
+                    <button
+                      key={id}
+                      onClick={() => setSelectedId(id)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-lg text-xs border-2 transition-all max-w-full truncate",
+                        selectedId === id ? "border-primary bg-primary/10" : "border-border hover:border-muted-foreground"
+                      )}
+                    >
+                      {i + 1}. {id}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground truncate">
+                {selectedId}
+                {selectedId && (mappings[selectedId] ? " · mapeamento salvo ✓" : " · usando padrão")}
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-500">
+              Conecte um controle para personalizar e salvar o mapeamento dele. Cada controle guarda o próprio mapeamento automaticamente.
+            </div>
+          )}
+
           {/* Chung Mappings */}
           <div className="space-y-3">
             <h3 className="text-sm font-semibold text-chung uppercase tracking-wider flex items-center gap-2">
@@ -310,7 +359,7 @@ export const GamepadDialog = ({
               <RotateCcw className="w-4 h-4" />
               Padrão
             </Button>
-            <Button onClick={handleSave} className="flex-1 flex items-center gap-2">
+            <Button onClick={handleSave} disabled={!selectedId} className="flex-1 flex items-center gap-2">
               <Check className="w-4 h-4" />
               Salvar Mapeamento
             </Button>

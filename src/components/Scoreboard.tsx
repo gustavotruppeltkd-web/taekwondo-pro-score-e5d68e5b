@@ -10,7 +10,8 @@ import { GamepadDialog } from "./GamepadDialog";
 import { RefereeDecisionModal } from "./RefereeDecisionModal";
 import { RoundWinnerBanner } from "./RoundWinnerBanner";
 import { useScoreboard } from "@/hooks/useScoreboard";
-import { useGamepad, GamepadMapping, defaultMapping } from "@/hooks/useGamepad";
+import { useGamepad, GamepadMapping } from "@/hooks/useGamepad";
+import { loadGamepadMappings, persistGamepadMappings } from "@/lib/gamepadMappings";
 import { resolveFighterName } from "@/lib/fighterNames";
 
 export const Scoreboard = () => {
@@ -18,7 +19,17 @@ export const Scoreboard = () => {
   const [gamepadOpen, setGamepadOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
-  const [gamepadMapping, setGamepadMapping] = useState<GamepadMapping>(defaultMapping);
+  // Button mappings per controller id — loaded from localStorage so a remapped
+  // controller is recognized automatically next time.
+  const [gamepadMappings, setGamepadMappings] = useState(() => loadGamepadMappings());
+
+  const handleSaveMapping = useCallback((gamepadId: string, mapping: GamepadMapping) => {
+    setGamepadMappings((prev) => {
+      const next = { ...prev, [gamepadId]: mapping };
+      persistGamepadMappings(next);
+      return next;
+    });
+  }, []);
 
   const {
     state,
@@ -110,7 +121,7 @@ export const Scoreboard = () => {
     onResetMatch: resetMatch,
   };
 
-  const { connected: gamepadConnected, connectedCount: gamepadCount, gamepadName, gamepadNames } = useGamepad(gamepadMapping, gamepadActions);
+  const { connected: gamepadConnected, connectedCount: gamepadCount, gamepadName, gamepadNames } = useGamepad(gamepadMappings, gamepadActions);
 
   const roundsToWin = Math.ceil(settings.totalRounds / 2);
 
@@ -277,8 +288,8 @@ export const Scoreboard = () => {
       <GamepadDialog
         open={gamepadOpen}
         onOpenChange={setGamepadOpen}
-        mapping={gamepadMapping}
-        onSaveMapping={setGamepadMapping}
+        mappings={gamepadMappings}
+        onSaveMapping={handleSaveMapping}
         gamepadConnected={gamepadConnected}
         gamepadCount={gamepadCount}
         gamepadName={gamepadName}
