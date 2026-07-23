@@ -186,10 +186,15 @@ export const GamepadDialog = ({
 
   const handleButtonPress = useCallback((buttonIndex: number) => {
     if (listeningFor) {
-      setLocalMapping(prev => ({
-        ...prev,
-        [listeningFor]: buttonIndex,
-      }));
+      setLocalMapping(prev => {
+        const next: GamepadMapping = { ...prev, [listeningFor]: buttonIndex };
+        // Avoid conflicts: this input can only drive one action, so clear it
+        // from any other action that was using it.
+        (Object.keys(next) as (keyof GamepadMapping)[]).forEach((k) => {
+          if (k !== listeningFor && next[k] === buttonIndex) next[k] = null;
+        });
+        return next;
+      });
       setListeningFor(null);
     }
   }, [listeningFor]);

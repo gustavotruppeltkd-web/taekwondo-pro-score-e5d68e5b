@@ -1,4 +1,5 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { renderHook, act } from "@testing-library/react";
 import {
   activeAxisButtons,
   activeAxisInputs,
@@ -6,6 +7,9 @@ import {
   hatButtonIndex,
   decodeHatButtons,
   AXIS_BUTTON_BASE,
+  useGamepad,
+  defaultMapping,
+  GamepadMapping,
 } from "./useGamepad";
 
 describe("activeAxisButtons — axis to virtual button mapping", () => {
@@ -66,5 +70,83 @@ describe("activeAxisInputs — hats vs analog sticks", () => {
     const hatAxes = new Set<number>();
     expect(activeAxisInputs([-1, 0, 0, 0], hatAxes)).toEqual([axisButtonIndex(0, false)]);
     expect(hatAxes.size).toBe(0);
+  });
+});
+
+// --- Consensus with two controllers (the tricky part: they can have totally
+// different button layouts). We fake the Gamepad API + timers so we can drive
+// the poll loop frame by frame. ---
+describe("useGamepad — consensus across differently-mapped controllers", () => {
+  // A minimal, mutable fake gamepad.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const makeGamepad = (index: number, id: string): any => ({
+    index,
+    id,
+    mapping: "standard",
+    connected: true,
+    buttons: Array.from({ length: 18 }, () => ({ pressed: false, touched: false, value: 0 })),
+    axes: [0, 0, 0, 0],
+  });
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let pads: any[] = [];
+  const press = (pad: number, btn: number) => { pads[pad].buttons[btn].pressed = true; };
+  const frame = () => act(() => { vi.advanceTimersByTime(20); }); // fire one animation frame
+
+  beforeEach(() => {
+    pads = [];
+    Object.defineProperty(navigator, "getGamepads", { configurable: true, value: () => pads });
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "requestAnimationFrame", "cancelAnimationFrame", "Date"] });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (navigator as any).getGamepads;
+  });
+
+  it("scores when both controllers trigger the SAME action via DIFFERENT buttons", () => {
+    const onChungPlus2 = vi.fn();
+    // iPega: "+2 Azul" mapped to button 2. PS5: not in mappings -> default (chungPlus2 = 4 = L1).
+    const mappings: Record<string, GamepadMapping> = { ipega: { ...defaultMapping, chungPlus2: 16 } };
+
+    pads = [makeGamepad(0, "ipega"), makeGamepad(1, "ps5")];
+    renderHook(() => useGamepad(mappings, { onChungPlus2 }));
+    frame(); // initial poll: two controllers detected
+
+    press(0, 16); // referee A: iPega's mapped +2 button
+    frame();
+    expect(onChungPlus2).not.toHaveBeenCalled(); // one vote only — not enough
+
+    press(1, 4); // referee B: PS5's default +2 (L1)
+    frame();
+    expect(onChungPlus2).toHaveBeenCalledTimes(1); // consensus reached ✅
+  });
+
+  it("does NOT score when only one controller presses (consensus window expires)", () => {
+    const onChungPlus2 = vi.fn();
+    const mappings: Record<string, GamepadMapping> = { ipega: { ...defaultMapping, chungPlus2: 16 } };
+
+    pads = [makeGamepad(0, "ipega"), makeGamepad(1, "ps5")];
+    renderHook(() => useGamepad(mappings, { onChungPlus2 }));
+    frame();
+
+    press(0, 16);
+    frame();
+    act(() => { vi.advanceTimersByTime(2500); }); // let the ~2s window expire
+    press(1, 4);
+    frame();
+    expect(onChungPlus2).not.toHaveBeenCalled();
+  });
+
+  it("non-consensus actions (start/pause) fire from a single controller even with two connected", () => {
+    const onStartPause = vi.fn();
+    pads = [makeGamepad(0, "ipega"), makeGamepad(1, "ps5")];
+    renderHook(() => useGamepad({}, { onStartPause })); // both use default; startPause = R3 (11)
+    frame();
+
+    press(0, 11);
+    frame();
+    expect(onStartPause).toHaveBeenCalledTimes(1);
   });
 });
